@@ -1,0 +1,13 @@
+[package]
+name = "wallet"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+libsecp256k1 = { workspace = true }
+rand = { workspace = true }
+hex = { workspace = true }
+crypto = { path = "../crypto" }
+
+[dev-dependencies]
+tempfile = { workspace = true }

@@ -1,0 +1,15 @@
+[package]
+name = "wallet-cli"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+block = { path = "../block" }
+wallet = { path = "../wallet" }
+tx = { path = "../tx" }
+clap = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+libp2p = { workspace = true }
+rpassword = { workspace = true }
+tokio = { workspace = true }

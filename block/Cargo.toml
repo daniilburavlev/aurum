@@ -1,0 +1,19 @@
+[package]
+name = "block"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+crypto = { path = "../crypto" }
+serde = { workspace = true }
+serde_json = { workspace = true }
+wallet = { path = "../wallet" }
+tx = { path = "../tx" }
+rs_merkle = { workspace = true }
+hex = { workspace = true }
+sha2 = { workspace = true }
+rocksdb = { workspace = true }
+
+[dev-dependencies]
+tempfile = { workspace = true }
+db = { path = "../db" }

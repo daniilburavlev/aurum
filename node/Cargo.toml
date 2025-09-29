@@ -1,0 +1,24 @@
+[package]
+name = "aurum"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+axum = { workspace = true }
+db = { path = "../db" }
+rocksdb = { workspace = true }
+block = { path = "../block" }
+tx = { path = "../tx" }
+serde = { workspace = true }
+serde_json = { workspace = true }
+clap = { workspace = true }
+tokio = { workspace = true }
+tokio-cron-scheduler = { workspace = true }
+rpassword = { workspace = true }
+libp2p = { workspace = true }
+state = { path = "../state" }
+wallet = { path = "../wallet" }
+tracing-subscriber = { workspace = true }
+
+[dev-dependencies]
+tempfile = { workspace = true }

@@ -1,0 +1,18 @@
+[package]
+name = "tx"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+bigdecimal = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+sha2 = { workspace = true }
+hex = { workspace = true }
+wallet = { path = "../wallet" }
+crypto = { path = "../crypto" }
+rocksdb = { workspace = true }
+
+[dev-dependencies]
+tempfile = { workspace = true }
+db = { path = "../db" }
