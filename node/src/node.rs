@@ -10,6 +10,7 @@ use std::io::Read;
 use std::path::Path;
 use std::process::exit;
 use std::sync::Arc;
+use log::{debug, error};
 use tokio::sync::mpsc::Sender;
 use tokio_cron_scheduler::{Job, JobScheduler};
 use wallet::wallet::Wallet;
@@ -109,10 +110,10 @@ impl Node {
                 Box::pin(async move {
                     match state.proof_of_stake() {
                         Ok(block) => match block_tx.send(block).await {
-                            Err(e) => println!("Error sending block: {:?}", e),
+                            Err(e) => error!("Error sending block: {:?}", e),
                             _ => {}
                         },
-                        Err(e) => println!("Cannot create block: {}", e),
+                        Err(e) => debug!("Cannot create block: {}", e),
                     };
                 })
             })?)
@@ -132,7 +133,6 @@ impl Node {
                         } else {
                             0
                         };
-                        println!("syncing block {}", idx);
                         match client.find_block_by_idx(idx).await {
                             Some(block) => {
                                 println!("block: {:?}", block);

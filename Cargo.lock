@@ -281,7 +281,9 @@ dependencies = [
  "block",
  "clap",
  "db",
+ "flexi_logger",
  "libp2p",
+ "log",
  "rocksdb",
  "rpassword",
  "serde",
@@ -1075,6 +1077,19 @@ name = "find-msvc-tools"
 version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1ced73b1dacfc750a6db6c0a0c3a3853c8b41997e2e2c563dc90804ae6867959"
+
+[[package]]
+name = "flexi_logger"
+version = "0.31.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ff38b61724dd492b5171d5dbb0921dfc8e859022c5993b22f80f74e9afe6d573"
+dependencies = [
+ "chrono",
+ "log",
+ "nu-ansi-term",
+ "regex",
+ "thiserror 2.0.16",
+]
 
 [[package]]
 name = "fnv"
@@ -3523,6 +3538,7 @@ dependencies = [
  "block",
  "db",
  "hex",
+ "log",
  "rs_merkle",
  "serde_json",
  "sha2 0.10.9",
@@ -4016,6 +4032,7 @@ dependencies = [
  "block",
  "clap",
  "libp2p",
+ "log",
  "rpassword",
  "serde",
  "serde_json",

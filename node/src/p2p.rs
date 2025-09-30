@@ -10,10 +10,12 @@ use libp2p::identity::Keypair;
 use libp2p::kad::store::MemoryStore;
 use libp2p::swarm::SwarmEvent;
 use libp2p::{
-    PeerId, StreamProtocol, Swarm, gossipsub, identity, kad, noise, request_response, tcp, yamux,
+    gossipsub, identity, kad, noise, request_response, tcp, yamux, PeerId, StreamProtocol, Swarm,
 };
+use log::{debug, error};
 use state::state::State;
 use std::error::Error;
+use std::process::exit;
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::select;
@@ -77,7 +79,7 @@ impl P2pServer {
                     gossibsub_config,
                 )?;
                 let peer_id = PeerId::from(key.public());
-                println!("Node peer id: {:?}", peer_id);
+                println!("PeerID: {:?}", peer_id);
                 let store = MemoryStore::new(peer_id);
                 let kademlia_config = kad::Config::default();
                 let mut kademlia = kad::Behaviour::with_config(peer_id, store, kademlia_config);
@@ -86,7 +88,9 @@ impl P2pServer {
                         if let Some((peer_id, addr)) = parse_addr(addr) {
                             kademlia.add_address(&peer_id, addr);
                             if let Err(e) = kademlia.bootstrap() {
-                                eprintln!("Failed to bootstrap Kademlia: {:?}", e);
+                                eprintln!("Failed to bootstrap Kademlia");
+                                error!("{:?}", e);
+                                exit(1);
                             }
                         }
                     }
@@ -155,14 +159,14 @@ impl P2pServer {
     async fn publish_block(&mut self, block: Option<Block>) {
         if let Some(block) = block {
             if let Ok(json) = serde_json::to_string(&block) {
-                println!("{}", serde_json::to_string_pretty(&json).unwrap());
+                debug!("{}", serde_json::to_string_pretty(&json).unwrap());
                 if let Err(e) = self
                     .swarm
                     .behaviour_mut()
                     .gossipsub
                     .publish(self.block_topic.clone(), json)
                 {
-                    eprintln!("Failed to publish block: {:?}", e);
+                    error!("Failed to publish block: {:?}", e);
                 }
             }
         }
@@ -221,7 +225,7 @@ impl P2pServer {
                                 .gossipsub
                                 .publish(self.tx_topic.clone(), json)
                             {
-                                println!("Error publishing to swarm: {:?}", e);
+                                error!("Error publishing to swarm: {:?}", e);
                             }
                             TxResponse { error: None }
                         }
@@ -235,7 +239,7 @@ impl P2pServer {
                         .tx
                         .send_response(channel, response)
                     {
-                        println!("Error sending response: {:?}", e);
+                        error!("Error sending response: {:?}", e);
                     }
                 }
                 _ => {}
@@ -254,13 +258,13 @@ impl P2pServer {
                             .find_block
                             .send_response(channel, response)
                         {
-                            println!("Error sending response: {:?}", e);
+                            error!("Error sending response: {:?}", e);
                         }
                     }
                 }
                 _ => {}
             },
-            swarm_event => println!("{:?}", swarm_event),
+            swarm_event => debug!("{:?}", swarm_event),
         }
     }
 
@@ -271,14 +275,14 @@ impl P2pServer {
                 serde_json::from_str(String::from_utf8(message.clone().data).unwrap().as_str())
                     .unwrap();
             if let Err(e) = self.state.add_tx(&tx) {
-                println!("Error sending message: {:?}", e);
+                error!("Error sending message: {:?}", e);
             }
         } else if topic == self.block_topic.hash() {
             let block: Block =
                 serde_json::from_str(String::from_utf8(message.clone().data).unwrap().as_str())
                     .unwrap();
             match self.state.add_block(&block) {
-                Err(e) => println!("Error adding block: {:?}", e),
+                Err(e) => error!("Error adding block: {:?}", e),
                 _ => {}
             }
         }

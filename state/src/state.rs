@@ -4,6 +4,7 @@ use bigdecimal::{BigDecimal, FromPrimitive, Zero};
 use block::block::Block;
 use block::block_storage::BlockStorage;
 use db::open;
+use log::{debug, error};
 use sha2::Digest;
 use std::collections::{BTreeSet, HashMap};
 use std::fs;
@@ -122,11 +123,11 @@ impl State {
     }
 
     pub fn add_block(&self, block: &Block) -> Result<(), std::io::Error> {
-        println!("adding block: {:?}", block);
         if block.idx != 0 && !block.valid() {
-            eprintln!("Invalid block");
+            error!("Invalid block: {:?}", block);
             return Ok(())
         }
+        debug!("{:?}", block);
         if let Some(txs) = block.txs() {
             for tx in txs {
                 self.nonce_storage.save(tx.from(), tx.nonce())?;
@@ -210,7 +211,6 @@ impl State {
         stakes: &Vec<Stake>,
         total_stake: &BigInt,
     ) -> String {
-        println!("stakes: {:?}", stakes);
         let stakes_hashes: Vec<[u8; 32]> =
             stakes.clone().iter().map(|staker| staker.hash()).collect();
         let merkle_tree =

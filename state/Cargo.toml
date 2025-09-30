@@ -13,6 +13,7 @@ sha2 = { workspace = true }
 hex = { workspace = true }
 tx = { path = "../tx" }
 wallet = { path = "../wallet" }
+log = { workspace = true }
 
 [dev-dependencies]
 tempfile = { workspace = true }

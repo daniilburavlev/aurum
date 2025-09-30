@@ -2,10 +2,10 @@ use crate::behaviour::{
     BlockRequest, BlockResponse, ClientBehaviour, ClientBehaviourEvent, NonceRequest,
     NonceResponse, TxResponse,
 };
+use block::block::Block;
 use libp2p::futures::StreamExt;
 use libp2p::swarm::SwarmEvent;
-use libp2p::{noise, request_response, tcp, yamux, Multiaddr, PeerId, StreamProtocol, Swarm};
-use block::block::Block;
+use libp2p::{Multiaddr, PeerId, StreamProtocol, Swarm, noise, request_response, tcp, yamux};
 use tx::tx::Tx;
 
 pub struct Client {
@@ -54,13 +54,11 @@ impl Client {
             })?
             .build();
         let remote: Multiaddr = node.parse()?;
-        println!("Dialing");
         swarm.dial(remote)?;
-        println!("Dialed");
         match swarm.select_next_some().await {
             SwarmEvent::ConnectionEstablished { peer_id, .. } => Ok(Self { swarm, peer_id }),
             e => {
-                println!("{:?}", e);
+                eprintln!("{:?}", e);
                 Err(std::io::Error::new(std::io::ErrorKind::AddrInUse, "").into())
             }
         }
@@ -121,7 +119,6 @@ impl Client {
                 ..
             })) => match message {
                 request_response::Message::Response { response, .. } => {
-                    println!("message response: {:?}", response);
                     if let Some(error) = response.error {
                         println!("error: {:?}", error);
                         false
@@ -130,12 +127,12 @@ impl Client {
                     }
                 }
                 _ => {
-                    println!("{:?}", message);
+                    eprintln!("{:?}", message);
                     false
                 }
             },
             e => {
-                println!("{:?}", e);
+                eprintln!("{:?}", e);
                 false
             }
         }

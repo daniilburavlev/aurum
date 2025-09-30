@@ -19,6 +19,8 @@ libp2p = { workspace = true }
 state = { path = "../state" }
 wallet = { path = "../wallet" }
 tracing-subscriber = { workspace = true }
+log = { workspace = true }
+flexi_logger = { workspace = true }
 
 [dev-dependencies]
 tempfile = { workspace = true }

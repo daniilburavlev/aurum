@@ -28,7 +28,7 @@ git clone https://github.com/daniilburavlev/aurum.git && \
 ```
 ### Building with cargo
 ```bash
-cargo build 
+cargo build --release
 ```
 > Node & cli wallet also can be installed to PATH
 ```bash
