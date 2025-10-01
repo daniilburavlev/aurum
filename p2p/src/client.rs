@@ -57,10 +57,7 @@ impl Client {
         swarm.dial(remote)?;
         match swarm.select_next_some().await {
             SwarmEvent::ConnectionEstablished { peer_id, .. } => Ok(Self { swarm, peer_id }),
-            e => {
-                eprintln!("{:?}", e);
-                Err(std::io::Error::new(std::io::ErrorKind::AddrInUse, "").into())
-            }
+            _ => Err(std::io::Error::new(std::io::ErrorKind::AddrInUse, "").into()),
         }
     }
 
@@ -74,15 +71,9 @@ impl Client {
                 request_response::Event::Message { message, .. },
             )) => match message {
                 request_response::Message::Response { response, .. } => response.nonce,
-                e => {
-                    println!("{:?}", e);
-                    0
-                }
+                _ => 0,
             },
-            e => {
-                println!("{:?}", e);
-                0
-            }
+            _ => 0,
         }
     }
 
@@ -96,19 +87,13 @@ impl Client {
                 request_response::Event::Message { message, .. },
             )) => match message {
                 request_response::Message::Response { response, .. } => response.block,
-                e => {
-                    println!("{:?}", e);
-                    None
-                }
+                _ => None,
             },
-            e => {
-                println!("{:?}", e);
-                None
-            }
+            _ => None,
         }
     }
 
-    pub async fn send_tx(&mut self, tx: &Tx) -> bool {
+    pub async fn send_tx(&mut self, tx: &Tx) -> Result<(), String> {
         self.swarm
             .behaviour_mut()
             .tx
@@ -120,21 +105,14 @@ impl Client {
             })) => match message {
                 request_response::Message::Response { response, .. } => {
                     if let Some(error) = response.error {
-                        println!("error: {:?}", error);
-                        false
+                        Err(error)
                     } else {
-                        true
+                        Ok(())
                     }
                 }
-                _ => {
-                    eprintln!("{:?}", message);
-                    false
-                }
+                _ => Err(String::from("Internal error")),
             },
-            e => {
-                eprintln!("{:?}", e);
-                false
-            }
+            _ => Err(String::from("Unexpected response")),
         }
     }
 }

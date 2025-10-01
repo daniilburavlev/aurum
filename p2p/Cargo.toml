@@ -1,0 +1,10 @@
+[package]
+name = "p2p"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+block = { path = "../block" }
+tx = { path = "../tx" }
+libp2p = { workspace = true }
+serde = { workspace = true }

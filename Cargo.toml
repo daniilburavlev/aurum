@@ -4,10 +4,9 @@ edition = "2024"
 
 [workspace]
 resolver = "2"
-members = ["block", "crypto", "db", "node", "state", "tx", "wallet", "wallet-cli"]
+members = ["block", "crypto", "db", "node", "p2p", "state", "tx", "wallet", "wallet-cli"]
 
 [workspace.dependencies]
-axum = "0.8.4"
 argon2 = "0.5.3"
 aes-gcm = "0.10.3"
 rand = "0.8"

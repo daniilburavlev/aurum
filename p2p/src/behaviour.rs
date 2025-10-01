@@ -1,7 +1,7 @@
 use block::block::Block;
+use libp2p::{gossipsub, kad, request_response};
 use libp2p::kad::store::MemoryStore;
 use libp2p::swarm::NetworkBehaviour;
-use libp2p::{gossipsub, kad, request_response};
 use serde::{Deserialize, Serialize};
 use tx::tx::Tx;
 
@@ -32,6 +32,8 @@ pub struct BlockResponse {
 
 #[derive(NetworkBehaviour)]
 pub struct ClientBehaviour {
+    pub nonce: request_response::json::Behaviour<NonceRequest, NonceResponse>,
+    pub tx: request_response::json::Behaviour<Tx, TxResponse>,
     pub find_block: request_response::json::Behaviour<BlockRequest, BlockResponse>,
 }
 
