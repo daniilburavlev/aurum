@@ -1,59 +1,45 @@
 use crate::address::parse_addr;
-use crate::client::Client;
+use crate::config::Config;
 use crate::p2p::P2pServer;
 use block::block::Block;
+use log::{debug, error};
+use p2p::client::Client;
 use state::state::State;
 use std::env::home_dir;
 use std::error::Error;
-use std::io;
-use std::io::Read;
 use std::path::Path;
 use std::process::exit;
 use std::sync::Arc;
-use log::{debug, error};
 use tokio::sync::mpsc::Sender;
 use tokio_cron_scheduler::{Job, JobScheduler};
 use wallet::wallet::Wallet;
 
-const DEFAULT_PORT: i32 = 0;
-const DEFAULT_KEYSTORE: &str = ".aurum/keystore";
-const DEFAULT_STORAGE_PATH: &str = ".aurum/storage";
-
 pub struct Node {
     wallet: Wallet,
     port: i32,
-    nodes: Option<Vec<String>>,
+    nodes: Vec<String>,
     state: Arc<State>,
 }
 
 impl Node {
-    pub fn init(genesis_path: &str) {
-        if let Some(mut path) = home_dir() {
-            path.push(DEFAULT_STORAGE_PATH);
-            if let Ok(state) = State::new(Wallet::new(), &path) {
-                let path = Path::new(genesis_path);
-                if let Err(_) = state.load_genesis(&path) {
-                    eprintln!("Error opening genesis file");
-                    exit(1);
-                }
-            } else {
-                eprintln!("Error initializing node state");
-                exit(1)
+    pub fn init(storage_path: &str, genesis_path: &str) {
+        let path = Path::new(storage_path);
+        if let Ok(state) = State::new(Wallet::new(), path) {
+            let path = Path::new(genesis_path);
+            if let Err(_) = state.load_genesis(&path) {
+                eprintln!("Error opening genesis file");
+                exit(1);
             }
         } else {
-            eprintln!("Error getting home dir, check access");
+            eprintln!("Error initializing node state");
             exit(1)
         }
     }
 
-    pub async fn new(
-        port: Option<i32>,
-        wallet: Option<String>,
-        nodes: Option<Vec<String>>,
-    ) -> Self {
-        let wallet = Self::get_wallet(wallet);
+    pub async fn new(config: &Config) -> Self {
+        let wallet = Self::get_wallet(config.secret());
         if let Some(mut path) = home_dir() {
-            path.push(DEFAULT_STORAGE_PATH);
+            path.push(config.storage_path());
             let state = match State::new(wallet.clone(), &path) {
                 Ok(state) => Arc::new(state),
                 Err(_) => {
@@ -61,17 +47,16 @@ impl Node {
                     exit(1);
                 }
             };
-            let port = port.unwrap_or(DEFAULT_PORT);
+            let port = config.port();
             let node = Self {
                 port,
                 wallet,
                 state,
-                nodes: nodes.clone(),
+                nodes: config.nodes(),
             };
-            if let Some(nodes) = nodes
-                && !nodes.is_empty()
-            {
-                node.sync_state(nodes.get(0).unwrap().to_owned()).await;
+            if !config.nodes().is_empty() {
+                node.sync_state(config.nodes().get(0).unwrap().to_owned())
+                    .await;
             }
             return node;
         }
@@ -148,60 +133,15 @@ impl Node {
         }
     }
 
-    fn get_wallet(wallet: Option<String>) -> Wallet {
-        if let Some(mut path) = home_dir() {
-            path.push(DEFAULT_KEYSTORE);
-            let path = path.to_str().unwrap();
-            if let Some(wallet) = wallet {
-                match Wallet::read(path, &wallet, Self::read_password().as_ref()) {
-                    Ok(wallet) => wallet,
-                    Err(_) => {
-                        eprintln!("Error reading wallet from path");
-                        exit(1);
-                    }
+    fn get_wallet(secret: String) -> Wallet {
+        if let Ok(decoded) = hex::decode(secret) {
+            if let Ok(secret) = decoded.try_into() {
+                if let Ok(wallet) = Wallet::from_secret(secret) {
+                    return wallet;
                 }
-            } else {
-                println!("Wallet is not specified, create new one? [y/n]: ");
-                if !Self::get_option() {
-                    exit(0);
-                }
-                let password = Self::read_password();
-                let wallet = Wallet::new();
-                if let Err(_) = wallet.write(path, password.as_bytes()) {
-                    eprintln!("Error creating wallet");
-                    exit(1);
-                }
-                println!("Wallet successfully created: {}", wallet.address());
-                wallet
-            }
-        } else {
-            eprintln!("Error getting home dir, check access");
-            exit(1);
-        }
-    }
-
-    fn read_password() -> String {
-        println!("Enter password");
-        if let Ok(password) = rpassword::read_password() {
-            password
-        } else {
-            eprintln!("Error reading password");
-            exit(1);
-        }
-    }
-
-    fn get_option() -> bool {
-        let stdin = io::stdin();
-        let mut bytes = stdin.bytes();
-        if let Some(Ok(byte)) = bytes.next() {
-            let ch = byte as char;
-            if ch == 'y' {
-                return true;
-            } else if ch == 'n' {
-                return false;
             }
         }
-        eprintln!("Error reading from stdin");
+        eprintln!("Incorrect secret");
         exit(1);
     }
 }

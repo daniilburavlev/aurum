@@ -1,10 +1,10 @@
 use crate::cli;
 use clap::{Parser, Subcommand};
+use p2p::client::Client;
 use std::env::home_dir;
 use std::process::exit;
 use tx::tx::Tx;
 use wallet::wallet::Wallet;
-use wallet_cli::client::Client;
 
 const DEFAULT_KEYSTORE: &str = ".aurum/keystore";
 
@@ -74,10 +74,10 @@ async fn new_tx(
     let nonce = client.get_nonce(from).await;
     let tx = Tx::new(&wallet, to, amount, nonce + 1)?;
     println!("Tx created: {:?}", tx);
-    if client.send_tx(&tx).await {
-        println!("Transaction successfully submitted");
+    if let Err(e) = client.send_tx(&tx).await {
+        eprintln!("Invalid transaction: {}", e);
     } else {
-        println!("Transaction invalid");
+        println!("Transaction successfully submitted");
     }
     Ok(())
 }

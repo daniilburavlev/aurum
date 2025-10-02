@@ -1,7 +1,6 @@
-use aurum::{cli, logger};
+use aurum::cli;
 
 #[tokio::main]
 async fn main() {
-    logger::init_logger();
     cli::start_cli().await;
 }

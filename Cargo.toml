@@ -18,7 +18,7 @@ sha2 = "0.10.9"
 rs_merkle = "1.5.0"
 bigdecimal = "0.4.8"
 rocksdb = "0.24.0"
-clap = { version = "4.5.47", features = ["derive"] }
+clap = { version = "4.5.47", features = ["derive", "env"] }
 libp2p = { version = "0.56.0", features = ["gossipsub", "mdns", "tokio", "tcp", "macros", "noise", "yamux", "quic", "request-response", "json", "ecdsa", "kad"] }
 rpassword = "7.4.0"
 tokio = { version = "1.47.1", features = ["full"] }

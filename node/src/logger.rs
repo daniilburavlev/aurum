@@ -1,13 +1,11 @@
+use crate::config::Config;
 use flexi_logger::FileSpec;
-use std::env::home_dir;
 
-const DEFAULT_PATH: &str = ".aurum/log";
-
-pub fn init_logger() {
-    let path = home_dir().unwrap().join(DEFAULT_PATH);
-    flexi_logger::Logger::try_with_str("debug")
+pub fn init_logger(config: &Config) {
+    let logs_config = config.logs();
+    flexi_logger::Logger::try_with_str(logs_config.level())
         .unwrap()
-        .log_to_file(FileSpec::default().directory(path))
+        .log_to_file(FileSpec::default().directory(logs_config.dir()))
         .start()
         .unwrap();
 }

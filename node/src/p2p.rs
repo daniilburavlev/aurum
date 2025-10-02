@@ -1,8 +1,4 @@
 use crate::address::parse_addr;
-use crate::behaviour::{
-    BlockRequest, BlockResponse, NodeBehaviour, NodeBehaviourEvent, NonceRequest, NonceResponse,
-    TxResponse,
-};
 use block::block::Block;
 use libp2p::futures::StreamExt;
 use libp2p::gossipsub::IdentTopic;
@@ -10,9 +6,13 @@ use libp2p::identity::Keypair;
 use libp2p::kad::store::MemoryStore;
 use libp2p::swarm::SwarmEvent;
 use libp2p::{
-    gossipsub, identity, kad, noise, request_response, tcp, yamux, PeerId, StreamProtocol, Swarm,
+    PeerId, StreamProtocol, Swarm, gossipsub, identity, kad, noise, request_response, tcp, yamux,
 };
 use log::{debug, error};
+use p2p::behaviour::{
+    BlockRequest, BlockResponse, NodeBehaviour, NodeBehaviourEvent, NonceRequest, NonceResponse,
+    TxResponse,
+};
 use state::state::State;
 use std::error::Error;
 use std::process::exit;
@@ -37,7 +37,7 @@ impl P2pServer {
         wallet: &Wallet,
         state: &Arc<State>,
         port: i32,
-        nodes: Option<Vec<String>>,
+        nodes: Vec<String>,
         block_rx: Receiver<Block>,
     ) -> Self {
         Self {
@@ -52,7 +52,7 @@ impl P2pServer {
 
     fn build_swarm(
         validator: &Wallet,
-        nodes: &Option<Vec<String>>,
+        nodes: &Vec<String>,
     ) -> Result<Swarm<NodeBehaviour>, Box<dyn Error>> {
         let secret = identity::ecdsa::SecretKey::try_from_bytes(validator.secret())
             .map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidData, e))?;
@@ -83,7 +83,7 @@ impl P2pServer {
                 let store = MemoryStore::new(peer_id);
                 let kademlia_config = kad::Config::default();
                 let mut kademlia = kad::Behaviour::with_config(peer_id, store, kademlia_config);
-                if let Some(nodes) = nodes {
+                if !nodes.is_empty() {
                     for addr in nodes {
                         if let Some((peer_id, addr)) = parse_addr(addr) {
                             kademlia.add_address(&peer_id, addr);

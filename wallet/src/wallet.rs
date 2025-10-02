@@ -23,6 +23,10 @@ impl Wallet {
         self.secret.clone()
     }
 
+    pub fn hex_secret(&self) -> String {
+        hex::encode(&self.secret)
+    }
+
     pub fn address(&self) -> String {
         hex::encode(self.address)
     }
