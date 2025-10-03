@@ -15,3 +15,4 @@ rpassword = { workspace = true }
 p2p = { path = "../p2p" }
 tokio = { workspace = true }
 log = "0.4.28"
+hex = { workspace = true }

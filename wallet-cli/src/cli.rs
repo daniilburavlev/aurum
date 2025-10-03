@@ -1,6 +1,7 @@
 use crate::cli;
 use clap::{Parser, Subcommand};
 use p2p::client::Client;
+use rpassword::read_password;
 use std::env::home_dir;
 use std::process::exit;
 use tx::tx::Tx;
@@ -39,19 +40,22 @@ pub enum WalletCmd {
         #[arg(long, value_name = "amount")]
         amount: String,
     },
-
-    FindBlock{
+    FindBlock {
         #[arg(long, value_name = "node")]
         node: String,
         #[arg(long, value_name = "idx")]
         idx: u64,
     },
+    Restore {
+        #[arg(long, value_name = "secret")]
+        secret: String,
+    },
 }
 
 async fn create_wallet() -> Result<(), std::io::Error> {
-    println!("Enter password:");
-    let password = rpassword::read_password()?;
+    let password = get_password();
     let wallet = Wallet::new();
+    println!("secret: {}", wallet.hex_secret());
     let keystore_path = home_dir().unwrap().join(DEFAULT_KEYSTORE);
     let keystore_path = keystore_path.to_str().unwrap();
     wallet.write(keystore_path, password.as_bytes())?;
@@ -66,7 +70,7 @@ async fn new_tx(
     amount: String,
 ) -> Result<(), Box<dyn std::error::Error>> {
     println!("Enter password:");
-    let password = rpassword::read_password()?;
+    let password = read_password()?;
     let keystore_path = home_dir().unwrap().join(DEFAULT_KEYSTORE);
     let keystore_path = keystore_path.to_str().unwrap();
     let wallet = Wallet::read(keystore_path, from.as_str(), password.as_bytes())?;
@@ -90,10 +94,7 @@ async fn stake(
     new_tx(address, from, String::from("STAKE"), amount).await
 }
 
-async fn find_block_by_idx(
-    address: String,
-    idx: u64,
-) -> Result<(), Box<dyn std::error::Error>> {
+async fn find_block_by_idx(address: String, idx: u64) -> Result<(), Box<dyn std::error::Error>> {
     let mut client = Client::new(address).await?;
     if let Some(block) = client.find_block_by_idx(idx).await {
         let json = serde_json::to_string_pretty(&block)?;
@@ -102,6 +103,28 @@ async fn find_block_by_idx(
         println!("No block found!");
     }
     Ok(())
+}
+
+fn restore(secret: String) {
+    if let Ok(secret) = hex::decode(secret) {
+        if secret.len() != 32 {
+            eprintln!("Invalid secret!");
+            exit(1);
+        }
+        let secret: [u8; 32] = secret.try_into().unwrap();
+        if let Ok(wallet) = Wallet::from_secret(secret) {
+            println!("Wallet: {}", wallet.address());
+            let password = get_password();
+            let path = home_dir().unwrap().join(DEFAULT_KEYSTORE);
+            if let Err(_) = wallet.write(path.to_str().unwrap(), password.as_bytes()) {
+                eprintln!("Wallet not found");
+                exit(1);
+            }
+        }
+    } else {
+        eprintln!("Invalid secret!");
+        exit(1);
+    }
 }
 
 pub async fn start_cli() {
@@ -136,5 +159,18 @@ pub async fn start_cli() {
                 exit(1);
             }
         }
+        WalletCmd::Restore { secret } => {
+            restore(secret);
+        }
+    }
+}
+
+fn get_password() -> String {
+    println!("Enter password:");
+    if let Ok(password) = read_password() {
+        password
+    } else {
+        eprintln!("Error reading password!");
+        exit(1);
     }
 }

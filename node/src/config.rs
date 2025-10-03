@@ -31,7 +31,7 @@ impl Logs {
     }
 
     pub fn dir(&self) -> String {
-        self.level.clone().unwrap()
+        self.dir.clone().unwrap()
     }
 }
 
