@@ -47,16 +47,16 @@ impl MemPool {
         self.stakes = stakes;
     }
 
-    pub fn add_tx(&mut self, tx_data: TxData) -> Option<String> {
+    pub fn add_tx(&mut self, tx_data: TxData) -> Result<Tx, String> {
         if !tx_data.valid() {
-            return Some("Invalid transaction".to_string());
+            return Err("Invalid transaction".to_string());
         }
         let tx = Tx::from_tx(tx_data, self.last_event.clone(), self.current_block);
         if let Some(err) = process_tx(&tx, &mut self.balances, &mut self.stakes) {
-            Some(err)
+            Err(err)
         } else {
-            self.pending_txs.push(tx);
-            None
+            self.pending_txs.push(tx.clone());
+            Ok(tx)
         }
     }
 

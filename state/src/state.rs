@@ -3,6 +3,7 @@ use balance::balance::Balance;
 use block::block::Block;
 use stake::stake::Stake;
 use std::collections::{BTreeMap, HashMap};
+use tx::tx::Tx;
 use tx::tx_data::TxData;
 use wallet::wallet::Wallet;
 
@@ -29,7 +30,7 @@ impl State {
         mem_pool.update(prev_block_hash, current_block, last_event, balances, stakes);
     }
 
-    pub async fn add_tx(&self, tx_data: TxData) -> Option<String> {
+    pub async fn add_tx(&self, tx_data: TxData) -> Result<Tx, String> {
         let mut mem_pool = self.mem_pool.lock().await;
         mem_pool.add_tx(tx_data)
     }

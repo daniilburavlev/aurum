@@ -1,27 +1,28 @@
 use block::block::Block;
 use futures::{
-    StreamExt,
     channel::{mpsc, oneshot},
     prelude::*,
+    StreamExt,
 };
 use libp2p::gossipsub::IdentTopic;
-use libp2p::kad::GetProvidersOk;
 use libp2p::kad::store::MemoryStore;
+use libp2p::kad::GetProvidersOk;
 use libp2p::multiaddr::Protocol;
 use libp2p::request_response::{OutboundRequestId, ProtocolSupport};
 use libp2p::swarm::{NetworkBehaviour, SwarmEvent};
 use libp2p::{
-    Multiaddr, PeerId, StreamProtocol, Swarm, gossipsub, kad, noise, request_response, tcp, yamux,
+    gossipsub, kad, noise, request_response, tcp, yamux, Multiaddr, PeerId, StreamProtocol, Swarm,
 };
-use log::{debug, error};
+use log::{debug, error, Record};
 use serde::{Deserialize, Serialize};
 use state::state::State;
-use std::collections::{HashMap, HashSet, hash_map};
+use std::collections::{hash_map, HashMap, HashSet};
 use std::error::Error;
 use std::sync::Arc;
 use std::time::Duration;
 use storage::storage::Storage;
 use tokio::sync::mpsc::Receiver;
+use tx::tx::Tx;
 use tx::tx_data::TxData;
 
 #[derive(NetworkBehaviour)]
@@ -66,7 +67,7 @@ enum Command {
     AddTx {
         data: TxData,
         peer: PeerId,
-        sender: oneshot::Sender<Option<String>>,
+        sender: oneshot::Sender<Result<Tx, String>>,
     },
 }
 
@@ -148,7 +149,7 @@ pub struct EventLoop {
     pending_get_providers: HashMap<kad::QueryId, oneshot::Sender<HashSet<PeerId>>>,
     command_receiver: mpsc::Receiver<Command>,
     pending_get_nonce: HashMap<OutboundRequestId, oneshot::Sender<u64>>,
-    pending_add_tx: HashMap<OutboundRequestId, oneshot::Sender<Option<String>>>,
+    pending_add_tx: HashMap<OutboundRequestId, oneshot::Sender<Result<Tx, String>>>,
     pending_find_block: HashMap<OutboundRequestId, oneshot::Sender<Option<Block>>>,
     new_block_topic: IdentTopic,
     storage: Arc<Storage>,
@@ -321,12 +322,21 @@ impl EventLoop {
                 request_response::Message::Request {
                     request, channel, ..
                 } => {
-                    let result = self.state.add_tx(request).await;
+                    let response = match self.state.add_tx(request).await {
+                        Ok(tx) => TxResponse {
+                            data: Some(tx),
+                            error: None,
+                        },
+                        Err(err) => TxResponse {
+                            data: None,
+                            error: Some(err),
+                        },
+                    };
                     if let Err(e) = self
                         .swarm
                         .behaviour_mut()
                         .add_tx
-                        .send_response(channel, TxResponse { error: result })
+                        .send_response(channel, response)
                     {
                         error!("Failed to send nonce: {:?}", e);
                     }
@@ -335,11 +345,18 @@ impl EventLoop {
                     request_id,
                     response,
                 } => {
+                    let result = if let Some(tx) = response.data {
+                        Ok(tx)
+                    } else {
+                        Err(response
+                            .error
+                            .unwrap_or(String::from("Invalid transaction")))
+                    };
                     let _ = self
                         .pending_add_tx
                         .remove(&request_id)
                         .expect("Request to still be pending.")
-                        .send(response.error);
+                        .send(result);
                 }
             },
             SwarmEvent::Behaviour(P2pBehaviourEvent::Gossipsub(event)) => match event {
@@ -372,6 +389,14 @@ impl EventLoop {
                 ..
             } => {
                 debug!("Dialing {peer_id}")
+            }
+            SwarmEvent::OutgoingConnectionError { peer_id, error, .. } => {
+                error!("Dialing error");
+                if let Some(peer_id) = peer_id {
+                    if let Some(sender) = self.pending_dial.remove(&peer_id) {
+                        let _ = sender.send(Err(Box::new(error)));
+                    }
+                }
             }
             e => {
                 debug!("Unhandled {:?}", e);
@@ -528,7 +553,7 @@ impl Client {
         receiver.await.expect("Sender not to be dropped.")
     }
 
-    pub async fn add_tx(&mut self, data: TxData, peer: PeerId) -> Option<String> {
+    pub async fn add_tx(&mut self, data: TxData, peer: PeerId) -> Result<Tx, String> {
         let (sender, receiver) = oneshot::channel();
         self.sender
             .send(Command::AddTx { data, peer, sender })
@@ -576,5 +601,6 @@ pub struct BlockResponse {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct TxResponse {
+    pub data: Option<Tx>,
     pub error: Option<String>,
 }

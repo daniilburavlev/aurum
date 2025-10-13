@@ -73,3 +73,27 @@ pub async fn p2p_test() {
     let block = client2.find_block(0, peer_id).await.unwrap();
     assert_eq!(block, genesis);
 }
+
+#[tokio::test]
+async fn then_dial_error() {
+    let wallet = Wallet::new();
+
+    let temp_storage_dir = tempdir().unwrap();
+    let storage = Storage::new(temp_storage_dir.path());
+    let state = State::new(wallet.clone());
+    let storage = Arc::new(storage);
+    let state = Arc::new(state);
+
+    let (_, rx) = tokio::sync::mpsc::channel(10);
+
+    let (mut client, event_loop) = network::new(wallet.secret(), &storage, &state, rx)
+        .await
+        .unwrap();
+    spawn(event_loop.run());
+
+    let address: Multiaddr = "/ip4/127.0.0.1/tcp/8080".parse().unwrap();
+    let peer_id = PeerId::random();
+
+    let err = client.dial(peer_id, address).await.is_err();
+    assert!(err);
+}

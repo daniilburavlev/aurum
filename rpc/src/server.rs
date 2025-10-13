@@ -7,9 +7,10 @@ use axum::{Json, Router};
 use block::block::Block;
 use libp2p::PeerId;
 use p2p::network::Client;
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use std::sync::Arc;
 use storage::storage::Storage;
+use tx::tx::Tx;
 use tx::tx_data::TxData;
 
 struct P2pClientHolder {
@@ -28,7 +29,7 @@ impl P2pClientHolder {
         client.get_nonce(wallet, peer_id).await
     }
 
-    async fn add_tx(&self, data: TxData, peer_id: PeerId) -> Option<String> {
+    async fn add_tx(&self, data: TxData, peer_id: PeerId) -> Result<Tx, String> {
         let mut client = self.client.lock().await;
         client.add_tx(data, peer_id).await
     }
@@ -47,7 +48,7 @@ impl IntoResponse for AppError {
                 (StatusCode::NOT_FOUND, Json::from(ErrorResponse { error }))
             }
             AppError::BadRequest(error) => {
-                (StatusCode::NOT_FOUND, Json::from(ErrorResponse { error }))
+                (StatusCode::BAD_REQUEST, Json::from(ErrorResponse { error }))
             }
         };
         (status, body).into_response()
@@ -94,7 +95,7 @@ impl AppState {
         }
     }
 
-    async fn add_tx(&self, tx: TxData) -> Option<String> {
+    async fn add_tx(&self, tx: TxData) -> Result<Tx, String> {
         let current_validator = self.get_current_validator();
         if current_validator == self.wallet {
             self.state.add_tx(tx).await
@@ -102,7 +103,7 @@ impl AppState {
             if let Some(peer_id) = self.address_to_peer_id(current_validator) {
                 self.client.add_tx(tx, peer_id).await
             } else {
-                Some("Can't select leader!".to_string())
+                Err(String::from("Internal server error"))
             }
         }
     }
@@ -176,15 +177,9 @@ async fn get_nonce(
 async fn add_tx(
     state: State<Arc<AppState>>,
     Json(data): Json<TxData>,
-) -> Result<Json<StatusBody>, AppError> {
-    if let Some(err) = state.add_tx(data).await {
-        Err(AppError::BadRequest(err))
-    } else {
-        Ok(Json(StatusBody { success: true }))
+) -> Result<Json<Tx>, AppError> {
+    match state.add_tx(data).await {
+        Ok(tx) => Ok(Json(tx)),
+        Err(err) => Err(AppError::BadRequest(err)),
     }
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct StatusBody {
-    success: bool,
 }
