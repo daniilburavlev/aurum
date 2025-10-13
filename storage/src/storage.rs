@@ -63,6 +63,7 @@ impl Storage {
                 balance.amount -= tx.amount();
                 let stake = stakes.entry(tx.from()).or_insert(Stake::empty(tx.from()));
                 stake.stake += tx.amount().to_bigint().unwrap();
+                balance.nonce = tx.nonce();
             }
         }
         let balances: Vec<Balance> = balances.into_values().collect();

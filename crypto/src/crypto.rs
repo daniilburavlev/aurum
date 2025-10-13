@@ -65,26 +65,13 @@ pub fn decrypt_data(
 }
 
 pub fn verify_signature(public_key: Vec<u8>, signature: &String, data: &[u8; 32]) -> bool {
-    if public_key.len() != 33 {
+    if public_key.len() != 65 {
         return false;
     }
-    let key_bytes: [u8; 33] = public_key.try_into().unwrap();
-    match libsecp256k1::PublicKey::parse_compressed(&key_bytes) {
+    let key_bytes: [u8; 65] = public_key.try_into().unwrap();
+    match libp2p::identity::ecdsa::PublicKey::try_from_bytes(&key_bytes) {
         Ok(public_key) => match bs58::decode(signature).into_vec() {
-            Ok(signature) => {
-                if signature.len() != 64 {
-                    return false;
-                }
-                let signature_bytes: [u8; 64] = signature.try_into().unwrap();
-                match libsecp256k1::Signature::parse_standard(&signature_bytes) {
-                    Ok(signature) => libsecp256k1::verify(
-                        &libsecp256k1::Message::parse(data),
-                        &signature,
-                        &public_key,
-                    ),
-                    Err(_) => false,
-                }
-            },
+            Ok(signature) => public_key.verify(data, &signature),
             Err(_) => false,
         },
         Err(_) => false,

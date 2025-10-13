@@ -3,6 +3,7 @@ use std::io::Write;
 use std::path::Path;
 use storage::storage::Storage;
 use tempfile::{tempdir, NamedTempFile};
+use common::bigdecimal::BigDecimal;
 use wallet::wallet::Wallet;
 
 #[test]
@@ -43,6 +44,24 @@ fn regenerate_genesis() {
     let genesis_1 = storage_1.find_latest_block().unwrap();
     let genesis_2 = storage_1.find_latest_block().unwrap();
     assert_eq!(genesis_1.hash_str(), genesis_2.hash_str());
+}
+
+#[test]
+fn check_genesis_state() {
+    let temp_dir = tempdir().unwrap();
+    let storage = Storage::new(temp_dir.path());
+
+    let genesis_file = NamedTempFile::new().unwrap();
+    let wallet = Wallet::new();
+    wallet_with_balance(&wallet, genesis_file.path()).unwrap();
+    storage.load_genesis(genesis_file.path()).unwrap();
+
+    let balances = storage.balances();
+    assert_eq!(balances.len(), 1);
+
+    let balance = balances.get(&wallet.address_str()).unwrap();
+    assert_eq!(balance.nonce, 1);
+    assert_eq!(balance.amount, BigDecimal::from_str("500000").unwrap());
 }
 
 fn wallet_with_balance(wallet: &Wallet, path: &Path) -> Result<(), std::io::Error> {
