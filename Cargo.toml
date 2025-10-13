@@ -1,25 +1,26 @@
 [workspace.package]
-version = "0.0.1"
+version = "0.1.0"
 edition = "2024"
 
 [workspace]
 resolver = "2"
-members = ["block", "crypto", "db", "node", "p2p", "state", "tx", "wallet", "wallet-cli"]
+members = ["balance", "block", "common", "crypto", "db", "node", "operation", "p2p", "rpc", "stake", "state", "storage", "tx", "wallet"]
 
 [workspace.dependencies]
 argon2 = "0.5.3"
+bs58 = "0.5.1"
 aes-gcm = "0.10.3"
 rand = "0.8"
 libsecp256k1 = "0.7.2"
+libp2p = { version = "0.56.0", features = ["kad", "noise", "ecdsa", "yamux", "rendezvous", "identify", "ping", "gossipsub", "tcp", "tokio", "request-response", "json", "quic"] }
 serde = { version = "1.0.219", features = ["derive"] }
+futures = "0.3.31"
 serde_json = "1.0.143"
-hex = "0.4.3"
 sha2 = "0.10.9"
 rs_merkle = "1.5.0"
 bigdecimal = "0.4.8"
 rocksdb = "0.24.0"
 clap = { version = "4.5.47", features = ["derive", "env"] }
-libp2p = { version = "0.56.0", features = ["gossipsub", "mdns", "tokio", "tcp", "macros", "noise", "yamux", "quic", "request-response", "json", "ecdsa", "kad"] }
 rpassword = "7.4.0"
 tokio = { version = "1.47.1", features = ["full"] }
 tracing-subscriber = { version = "0.3.20", features = ["env-filter"] }
@@ -27,3 +28,5 @@ tokio-cron-scheduler = "0.14.0"
 tempfile = "3.22.0"
 log = "0.4"
 flexi_logger = "0.31.4"
+axum = { version = "0.8.6", features = ["macros"] }
+httpclient = "0.26.1"

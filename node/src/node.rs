@@ -1,67 +1,62 @@
-use crate::address::parse_addr;
 use crate::config::Config;
-use crate::p2p::P2pServer;
 use block::block::Block;
+use libp2p::PeerId;
 use log::{debug, error};
-use p2p::client::Client;
+use p2p::network::Client;
 use state::state::State;
-use std::env::home_dir;
 use std::error::Error;
 use std::path::Path;
 use std::process::exit;
 use std::sync::Arc;
+use storage::storage::Storage;
 use tokio::sync::mpsc::Sender;
+use tokio::task::spawn;
 use tokio_cron_scheduler::{Job, JobScheduler};
 use wallet::wallet::Wallet;
 
 pub struct Node {
+    http_port: i32,
     wallet: Wallet,
-    port: i32,
+    address: String,
     nodes: Vec<String>,
     state: Arc<State>,
+    storage: Arc<Storage>,
 }
 
 impl Node {
     pub fn init(storage_path: &str, genesis_path: &str) {
         let path = Path::new(storage_path);
-        if let Ok(state) = State::new(Wallet::new(), path) {
-            let path = Path::new(genesis_path);
-            if let Err(_) = state.load_genesis(&path) {
-                eprintln!("Error opening genesis file");
-                exit(1);
-            }
-        } else {
-            eprintln!("Error initializing node state");
-            exit(1)
+        let state = Storage::new(path);
+        let path = Path::new(genesis_path);
+        if let Err(_) = state.load_genesis(&path) {
+            eprintln!("Error opening genesis file");
+            exit(1);
         }
     }
 
     pub async fn new(config: &Config) -> Self {
         let wallet = Self::get_wallet(config.secret());
-        if let Some(mut path) = home_dir() {
-            path.push(config.storage_path());
-            let state = match State::new(wallet.clone(), &path) {
-                Ok(state) => Arc::new(state),
-                Err(_) => {
-                    eprintln!("Error initializing node state");
-                    exit(1);
-                }
-            };
-            let port = config.port();
-            let node = Self {
-                port,
-                wallet,
-                state,
-                nodes: config.nodes(),
-            };
-            if !config.nodes().is_empty() {
-                node.sync_state(config.nodes().get(0).unwrap().to_owned())
-                    .await;
-            }
-            return node;
+        let storage_path = config.storage_path();
+        let path = Path::new(&storage_path);
+        let storage = Arc::new(Storage::new(path));
+        let state = Arc::new(State::new(wallet.clone()));
+        if let Some(latest_block) = storage.find_latest_block() {
+            state.update(
+                latest_block.hash_str(),
+                latest_block.idx() + 1,
+                latest_block.last_event(),
+                storage.balances(),
+                storage.stakes(),
+            ).await;
         }
-        eprintln!("Error initializing node state");
-        exit(1);
+        Self {
+            http_port: config.http_port(),
+            address: config.address(),
+            wallet,
+            state,
+            storage,
+            nodes: config.nodes(),
+        }
     }
 
     pub async fn start(&self) {
@@ -70,35 +65,62 @@ impl Node {
             eprintln!("Error starting validator");
             exit(1)
         }
-        if let Err(e) = P2pServer::new(
-            &self.wallet,
-            &self.state,
-            self.port,
-            self.nodes.clone(),
-            block_rx,
-        )
-        .start()
-        .await
+        let (mut client, event_loop) =
+            p2p::network::new(self.wallet.secret(), &self.storage, &self.state, block_rx)
+                .await
+                .unwrap();
+        spawn(event_loop.run());
+        client
+            .start_listening(self.address.clone().parse().unwrap())
+            .await
+            .expect("Failed to start listening");
+        client.start_providing(self.wallet.address_str()).await;
+        client.subscribe().await;
+
+        if !self.nodes.is_empty()
+            && let Some((address, peer_id)) = p2p::address::address_with_id(self.nodes[0].clone())
         {
-            eprintln!("Error starting P2p: {}", e);
-            exit(1);
+            client.dial(peer_id.clone(), address).await.unwrap();
+            self.sync_state(&mut client, peer_id).await;
         }
+        rpc::server::run(
+            self.http_port,
+            self.wallet.address_str(),
+            &self.storage,
+            &self.state,
+            client
+        ).await;
     }
 
     async fn start_validator(&self, block_tx: Sender<Block>) -> Result<(), Box<dyn Error>> {
+        let storage = Arc::clone(&self.storage);
         let state = Arc::clone(&self.state);
         let scheduler = JobScheduler::new().await?;
         scheduler
             .add(Job::new_async("*/12 * * * * *", move |_, _| {
                 let block_tx = block_tx.clone();
+                let storage = Arc::clone(&storage);
                 let state = Arc::clone(&state);
                 Box::pin(async move {
-                    match state.proof_of_stake() {
-                        Ok(block) => match block_tx.send(block).await {
-                            Err(e) => error!("Error sending block: {:?}", e),
-                            _ => {}
-                        },
-                        Err(e) => debug!("Cannot create block: {}", e),
+                    let validator = storage.current_validator().unwrap();
+                    match state.new_block(validator).await {
+                        Some(block) => {
+                            if let Err(e) = storage.add_block(&block) {
+                                error!("Error adding block: {}", e);
+                            } else {
+                                state.update(
+                                    block.hash_str(),
+                                    block.idx() + 1,
+                                    block.last_event(),
+                                    storage.balances(),
+                                    storage.stakes(),
+                                ).await;
+                                if let Err(e) = block_tx.send(block).await {
+                                    error!("Error sending block: {}", e);
+                                }
+                            }
+                        }
+                        None => debug!("Cannot create block!"),
                     };
                 })
             })?)
@@ -107,39 +129,36 @@ impl Node {
         Ok(())
     }
 
-    async fn sync_state(&self, node: String) {
+    async fn sync_state(&self, client: &mut Client, peer_id: PeerId) {
         let mut synced = false;
-        if let Some((_, addr)) = parse_addr(&node) {
-            if let Ok(mut client) = Client::new(addr.to_string()).await {
-                while !synced {
-                    if let Ok(latest_block) = self.state.find_latest() {
-                        let idx = if let Some(latest_block) = latest_block {
-                            latest_block.idx + 1
-                        } else {
-                            0
-                        };
-                        match client.find_block_by_idx(idx).await {
-                            Some(block) => {
-                                println!("block: {:?}", block);
-                                if let Err(_) = self.state.add_block(&block) {
-                                    break;
-                                }
-                            }
-                            None => synced = true,
-                        }
+        while !synced {
+            let idx = if let Some(latest_block) = self.storage.find_latest_block() {
+                latest_block.idx + 1
+            } else {
+                0
+            };
+            match client.find_block(idx, peer_id).await {
+                Some(block) => {
+                    if let Err(_) = self.storage.add_block(&block) {
+                        break;
+                    } else {
+                        self.state.update(
+                            block.hash_str(),
+                            block.idx() + 1,
+                            block.last_event(),
+                            self.storage.balances(),
+                            self.storage.stakes(),
+                        ).await;
                     }
                 }
+                None => synced = true,
             }
         }
     }
 
     fn get_wallet(secret: String) -> Wallet {
-        if let Ok(decoded) = hex::decode(secret) {
-            if let Ok(secret) = decoded.try_into() {
-                if let Ok(wallet) = Wallet::from_secret(secret) {
-                    return wallet;
-                }
-            }
+        if let Ok(wallet) = Wallet::from_secret_str(secret) {
+            return wallet;
         }
         eprintln!("Incorrect secret");
         exit(1);

@@ -1,0 +1,14 @@
+[package]
+name = "stake"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+rocksdb = { workspace = true }
+common = { path = "../common" }
+serde = { workspace = true }
+serde_json = { workspace = true }
+db = { path = "../db" }
+
+[dev-dependencies]
+tempfile = { workspace = true }

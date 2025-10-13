@@ -4,7 +4,18 @@ version.workspace = true
 edition.workspace = true
 
 [dependencies]
-block = { path = "../block" }
-tx = { path = "../tx" }
 libp2p = { workspace = true }
+tokio = { workspace = true }
+futures = { workspace = true }
 serde = { workspace = true }
+serde_json = { workspace = true }
+block = { path = "../block" }
+wallet = { path = "../wallet" }
+storage = { path = "../storage" }
+state = { path = "../state" }
+tx = { path = "../tx" }
+log = "0.4.28"
+
+[dev-dependencies]
+tempfile = { workspace = true }
+db = { path = "../db" }

@@ -5,12 +5,12 @@ edition.workspace = true
 
 [dependencies]
 crypto = { path = "../crypto" }
+bs58 = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 wallet = { path = "../wallet" }
 tx = { path = "../tx" }
 rs_merkle = { workspace = true }
-hex = { workspace = true }
 sha2 = { workspace = true }
 rocksdb = { workspace = true }
 

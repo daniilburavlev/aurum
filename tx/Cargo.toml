@@ -4,14 +4,14 @@ version.workspace = true
 edition.workspace = true
 
 [dependencies]
-bigdecimal = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 sha2 = { workspace = true }
-hex = { workspace = true }
 wallet = { path = "../wallet" }
 crypto = { path = "../crypto" }
+common = { path = "../common" }
 rocksdb = { workspace = true }
+bs58 = { workspace = true }
 
 [dev-dependencies]
 tempfile = { workspace = true }

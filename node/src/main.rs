@@ -1,4 +1,4 @@
-use aurum::cli;
+use xchg::cli;
 
 #[tokio::main]
 async fn main() {

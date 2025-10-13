@@ -1,0 +1,13 @@
+[package]
+name = "operation"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+tx = { path = "../tx" }
+balance = { path = "../balance" }
+stake = { path = "../stake" }
+
+[dev-dependencies]
+wallet = { path = "../wallet" }
+common = { path = "../common" }

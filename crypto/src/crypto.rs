@@ -70,7 +70,7 @@ pub fn verify_signature(public_key: Vec<u8>, signature: &String, data: &[u8; 32]
     }
     let key_bytes: [u8; 33] = public_key.try_into().unwrap();
     match libsecp256k1::PublicKey::parse_compressed(&key_bytes) {
-        Ok(public_key) => match hex::decode(signature) {
+        Ok(public_key) => match bs58::decode(signature).into_vec() {
             Ok(signature) => {
                 if signature.len() != 64 {
                     return false;

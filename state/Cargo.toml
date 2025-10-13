@@ -5,15 +5,17 @@ edition.workspace = true
 
 [dependencies]
 block = { path = "../block" }
-bigdecimal = { workspace = true }
 db = { path = "../db" }
+stake = { path = "../stake" }
+operation = { path = "../operation" }
+balance = { path = "../balance" }
 rs_merkle = { workspace = true }
 serde_json = { workspace = true }
 sha2 = { workspace = true }
-hex = { workspace = true }
 tx = { path = "../tx" }
 wallet = { path = "../wallet" }
 log = { workspace = true }
+futures = { workspace = true }
 
 [dev-dependencies]
 tempfile = { workspace = true }

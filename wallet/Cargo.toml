@@ -4,10 +4,9 @@ version.workspace = true
 edition.workspace = true
 
 [dependencies]
-libsecp256k1 = { workspace = true }
-rand = { workspace = true }
-hex = { workspace = true }
+bs58 = { workspace = true }
 crypto = { path = "../crypto" }
+libp2p = { workspace = true }
 
 [dev-dependencies]
 tempfile = { workspace = true }

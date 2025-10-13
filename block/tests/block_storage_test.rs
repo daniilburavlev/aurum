@@ -1,17 +1,17 @@
 use block::block::Block;
 use block::block_storage::BlockStorage;
-use std::collections::BTreeSet;
 use tempfile::tempdir;
 use tx::tx::Tx;
+use tx::tx_data::TxData;
 use wallet::wallet::Wallet;
 
 #[test]
 fn test_block_save() {
     let temp_dir = tempdir().unwrap();
     let wallet = Wallet::new();
-    let tx = Tx::new(&wallet, wallet.address(), String::from("0.001"), 1).unwrap();
-    let mut txs = BTreeSet::new();
-    txs.insert(tx);
+    let tx_data = TxData::new(&wallet, wallet.address_str(), String::from("0.001"), 1).unwrap();
+    let tx = Tx::from_tx(tx_data, String::default(), 0);
+    let txs = vec![tx];
     let block = Block::genesis(txs);
 
     let db = db::open(temp_dir.path()).unwrap();

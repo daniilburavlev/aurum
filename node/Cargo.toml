@@ -1,21 +1,22 @@
 [package]
-name = "aurum"
+name = "xchg"
 version.workspace = true
 edition.workspace = true
 
 [dependencies]
 block = { path = "../block" }
+rpc = { path = "../rpc" }
 p2p = { path = "../p2p" }
 tx = { path = "../tx" }
 serde_json = { workspace = true }
-hex = { workspace = true }
+rpassword = { workspace = true }
 clap = { workspace = true }
 tokio = { workspace = true }
 tokio-cron-scheduler = { workspace = true }
-libp2p = { workspace = true }
 state = { path = "../state" }
+storage = { path = "../storage" }
 wallet = { path = "../wallet" }
-tracing-subscriber = { workspace = true }
 log = { workspace = true }
 flexi_logger = { workspace = true }
 serde = { workspace = true }
+libp2p = { workspace = true }

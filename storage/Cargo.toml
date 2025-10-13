@@ -1,0 +1,20 @@
+[package]
+name = "storage"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+balance = { path = "../balance" }
+operation = { path = "../operation" }
+stake = { path = "../stake" }
+bs58 = { workspace = true }
+block = { path = "../block" }
+db = { path = "../db" }
+log = { workspace = true }
+tx = { path = "../tx" }
+common = { path = "../common" }
+serde_json = { workspace = true }
+
+[dev-dependencies]
+tempfile = { workspace = true }
+wallet = { path = "../wallet" }

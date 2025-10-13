@@ -1,0 +1,19 @@
+[package]
+name = "rpc"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+block = { path = "../block" }
+tx = { path = "../tx" }
+storage = { path = "../storage" }
+state = { path = "../state" }
+p2p = { path = "../p2p" }
+axum = { workspace = true }
+tokio = { workspace = true }
+serde_json = { workspace = true }
+bs58 = { workspace = true }
+libp2p = { workspace = true }
+serde = { workspace = true }
+futures = { workspace = true }
+httpclient = { workspace = true }

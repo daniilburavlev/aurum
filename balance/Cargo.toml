@@ -1,0 +1,15 @@
+[package]
+name = "balance"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+bigdecimal = { workspace = true }
+rocksdb = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+common = { path = "../common" }
+
+[dev-dependencies]
+tempfile = { workspace = true }
+db = { path = "../db" }

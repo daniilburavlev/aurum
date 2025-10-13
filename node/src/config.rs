@@ -3,11 +3,12 @@ use std::env::home_dir;
 use std::fs;
 use std::process::exit;
 
-const DEFAULT_PORT: i32 = 0;
-const DEFAULT_STORAGE: &str = ".aurum/storage";
+const DEFAULT_PORT: i32 = 8796;
+const DEFAULT_STORAGE: &str = ".xchg/storage";
+const DEFAULT_ADDRESS: &str = "/ip4/0.0.0.0/tcp/0";
 
 const DEFAULT_LEVEL: &str = "info";
-const DEFAULT_LOGS_PATH: &str = ".aurum/logs";
+const DEFAULT_LOGS_PATH: &str = ".xchg/logs";
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct Logs {
@@ -37,7 +38,8 @@ impl Logs {
 
 #[derive(Serialize, Deserialize)]
 pub struct Config {
-    port: Option<i32>,
+    http_port: Option<i32>,
+    address: Option<String>,
     logs: Option<Logs>,
     secret: String,
     storage_path: Option<String>,
@@ -61,11 +63,15 @@ impl Config {
         }
     }
 
-    pub fn port(&self) -> i32 {
-        if let Some(port) = self.port {
-            port
+    pub fn http_port(&self) -> i32 {
+        self.http_port.unwrap_or(DEFAULT_PORT)
+    }
+
+    pub fn address(&self) -> String {
+        if let Some(address) = &self.address {
+            address.clone()
         } else {
-            DEFAULT_PORT
+            DEFAULT_ADDRESS.to_string()
         }
     }
 
