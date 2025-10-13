@@ -13,7 +13,7 @@ use libp2p::swarm::{NetworkBehaviour, SwarmEvent};
 use libp2p::{
     gossipsub, kad, noise, request_response, tcp, yamux, Multiaddr, PeerId, StreamProtocol, Swarm,
 };
-use log::{debug, error, Record};
+use log::{debug, error};
 use serde::{Deserialize, Serialize};
 use state::state::State;
 use std::collections::{hash_map, HashMap, HashSet};
