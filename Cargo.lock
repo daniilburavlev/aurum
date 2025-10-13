@@ -385,7 +385,6 @@ dependencies = [
 name = "balance"
 version = "0.1.0"
 dependencies = [
- "bigdecimal",
  "common",
  "db",
  "rocksdb",
@@ -2834,7 +2833,6 @@ name = "p2p"
 version = "0.1.0"
 dependencies = [
  "block",
- "db",
  "futures",
  "libp2p",
  "log",
@@ -3775,13 +3773,9 @@ dependencies = [
  "balance",
  "block",
  "common",
- "db",
  "futures",
  "log",
  "operation",
- "rs_merkle",
- "serde_json",
- "sha2",
  "stake",
  "tokio",
  "tx",

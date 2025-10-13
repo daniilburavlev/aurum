@@ -1,12 +1,12 @@
+use tempfile::tempdir;
 use common::biginteger::BigInt;
 use stake::stake::Stake;
 use stake::stake_storage::StakeStorage;
-use std::env::temp_dir;
 
 #[test]
 fn save_get_stake() {
-    let temp_dir = temp_dir();
-    let db = db::open(temp_dir.as_path()).unwrap();
+    let temp_dir = tempdir().unwrap();
+    let db = db::open(temp_dir.path()).unwrap();
     let stake_storage = StakeStorage::new(&db);
     let stake = Stake {
         wallet: String::from("Wallet"),

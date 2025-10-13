@@ -18,4 +18,3 @@ log = "0.4.28"
 
 [dev-dependencies]
 tempfile = { workspace = true }
-db = { path = "../db" }
