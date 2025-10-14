@@ -13,7 +13,7 @@ fn load_genesis_and_add_valid_block() {
     let temp_file = NamedTempFile::new().unwrap();
     let wallet = Wallet::new();
     wallet_with_balance(&wallet, temp_file.path()).unwrap();
-    storage.load_genesis(temp_file.path()).unwrap();
+    storage.load_genesis_from_file(temp_file.path()).unwrap();
     let block = storage.find_latest_block().unwrap();
     assert_eq!(block.idx, 0);
 }
@@ -25,7 +25,7 @@ fn current_validator() {
     let temp_file = NamedTempFile::new().unwrap();
     let wallet = Wallet::new();
     wallet_with_balance(&wallet, temp_file.path()).unwrap();
-    storage.load_genesis(temp_file.path()).unwrap();
+    storage.load_genesis_from_file(temp_file.path()).unwrap();
     let validator = storage.current_validator().unwrap();
     println!("Current validator: {:?}", validator);
 }
@@ -39,8 +39,8 @@ fn regenerate_genesis() {
     let temp_file = NamedTempFile::new().unwrap();
     let wallet = Wallet::new();
     wallet_with_balance(&wallet, temp_file.path()).unwrap();
-    storage_1.load_genesis(temp_file.path()).unwrap();
-    storage_2.load_genesis(temp_file.path()).unwrap();
+    storage_1.load_genesis_from_file(temp_file.path()).unwrap();
+    storage_2.load_genesis_from_file(temp_file.path()).unwrap();
     let genesis_1 = storage_1.find_latest_block().unwrap();
     let genesis_2 = storage_1.find_latest_block().unwrap();
     assert_eq!(genesis_1.hash_str(), genesis_2.hash_str());
@@ -54,7 +54,7 @@ fn check_genesis_state() {
     let genesis_file = NamedTempFile::new().unwrap();
     let wallet = Wallet::new();
     wallet_with_balance(&wallet, genesis_file.path()).unwrap();
-    storage.load_genesis(genesis_file.path()).unwrap();
+    storage.load_genesis_from_file(genesis_file.path()).unwrap();
 
     let balances = storage.balances();
     assert_eq!(balances.len(), 1);

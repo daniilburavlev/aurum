@@ -44,12 +44,17 @@ impl Storage {
         }
     }
 
-    pub fn load_genesis(&self, genesis_path: &Path) -> Result<(), Box<dyn Error>> {
+    pub fn load_genesis_from_file(&self, genesis_path: &Path) -> Result<(), Box<dyn Error>> {
         if let Some(_) = self.block_storage.find_by_idx(0)? {
             return Ok(());
         }
         let json = fs::read_to_string(genesis_path)?;
-        let txs = Self::build_genesis_txs(json)?;
+        let txs_data: Vec<TxData> = serde_json::from_str(&json)?;
+        self.load_genesis(txs_data)
+    }
+
+    pub fn load_genesis(&self, txs_data: Vec<TxData>) -> Result<(), Box<dyn Error>> {
+        let txs = Self::build_genesis_txs(txs_data)?;
         let mut balances: HashMap<String, Balance> = HashMap::new();
         let mut stakes: BTreeMap<String, Stake> = BTreeMap::new();
         for tx in &txs {
@@ -76,8 +81,7 @@ impl Storage {
         Ok(())
     }
 
-    fn build_genesis_txs(json: String) -> Result<Vec<Tx>, Box<dyn Error>> {
-        let txs_data: Vec<TxData> = serde_json::from_str(&json)?;
+    fn build_genesis_txs(txs_data: Vec<TxData>) -> Result<Vec<Tx>, Box<dyn Error>> {
         let mut txs = Vec::new();
         let mut latest_hash = bs58::encode(FIRST_EVENT_HASH).into_string();
         for tx_data in txs_data {
@@ -128,11 +132,11 @@ impl Storage {
         }
     }
 
-    pub fn find_latest_event_hash(&self) -> Result<Option<String>, Box<dyn Error>> {
-        if let Some(hash) = self.tx_storage.find_latest_hash()? {
-            Ok(Some(hash))
+    pub fn find_latest_event_hash(&self) -> Option<String> {
+        if let Ok(Some(hash)) = self.tx_storage.find_latest_hash() {
+            Some(hash)
         } else {
-            Ok(None)
+            None
         }
     }
 

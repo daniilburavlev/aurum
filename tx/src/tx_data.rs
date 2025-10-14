@@ -32,7 +32,7 @@ impl TxData {
         tx.signature = signature;
         Ok(tx)
     }
-    
+
     pub fn from(&self) -> String {
         self.from.clone()
     }

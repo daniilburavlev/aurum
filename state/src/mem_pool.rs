@@ -56,6 +56,7 @@ impl MemPool {
             Err(err)
         } else {
             self.pending_txs.push(tx.clone());
+            self.last_event = tx.hash_str();
             Ok(tx)
         }
     }

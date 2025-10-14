@@ -20,3 +20,6 @@ log = { workspace = true }
 flexi_logger = { workspace = true }
 serde = { workspace = true }
 libp2p = { workspace = true }
+
+[dev-dependencies]
+tempfile = { workspace = true }

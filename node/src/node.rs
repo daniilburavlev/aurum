@@ -28,7 +28,7 @@ impl Node {
         let path = Path::new(storage_path);
         let state = Storage::new(path);
         let path = Path::new(genesis_path);
-        if let Err(_) = state.load_genesis(&path) {
+        if let Err(_) = state.load_genesis_from_file(&path) {
             eprintln!("Error opening genesis file");
             exit(1);
         }
