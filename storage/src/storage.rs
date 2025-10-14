@@ -95,8 +95,13 @@ impl Storage {
     pub fn add_block(&self, block: &Block) -> Result<(), Box<dyn Error>> {
         debug!("Adding block: {:?}", block);
         if let Some(latest) = self.block_storage.find_latest()? {
-            if latest.idx + 1 != block.idx {
-                return Ok(());
+            let expected_idx = latest.idx + 1;
+            if expected_idx != block.idx {
+                return Err(format!(
+                    "Invalid block index, expected: {}, was: {}",
+                    expected_idx, block.idx
+                )
+                .into());
             }
         }
         if let Some(txs) = block.txs() {
@@ -104,14 +109,21 @@ impl Storage {
                 && let Some(first) = txs.first()
                 && latest_hash != first.prev_hash()
             {
-                return Ok(());
+                return Err(format!(
+                    "PoH error, expected: {}, was: {}",
+                    latest_hash,
+                    first.prev_hash()
+                )
+                .into());
             }
             if self.save_txs(&txs, block.idx)? {
                 self.block_storage.save(&block)?;
+            } else {
+                return Err("Invalid transactions".into());
             }
         }
         if let Err(e) = self.block_storage.save(&block) {
-            error!("Cannot add block to storage: {}", e);
+            return Err(format!("Cannot add block to storage: {}", e).into());
         }
         Ok(())
     }
@@ -132,12 +144,17 @@ impl Storage {
         }
     }
 
-    pub fn find_latest_event_hash(&self) -> Option<String> {
+    pub fn find_latest_event_hash(&self) -> String {
         if let Ok(Some(hash)) = self.tx_storage.find_latest_hash() {
-            Some(hash)
+            hash
         } else {
-            None
+            Self::default_empty_hash()
         }
+    }
+
+    fn default_empty_hash() -> String {
+        let data = [0u8; 32];
+        bs58::encode(data).into_string()
     }
 
     fn save_txs(&self, txs: &Vec<Tx>, block: u64) -> Result<bool, Box<dyn Error>> {
@@ -200,6 +217,14 @@ impl Storage {
             }
         }
         Err(std::io::Error::new(std::io::ErrorKind::Other, "No latest block").into())
+    }
+
+    pub fn find_wallet_txs(&self, wallet: String) -> Vec<Tx> {
+        if let Ok(txs) = self.tx_storage.find_wallet_txs(wallet) {
+            txs
+        } else {
+            Vec::new()
+        }
     }
 
     fn total_stake(stakes: &BTreeMap<String, Stake>) -> BigInt {

@@ -3,7 +3,7 @@ use std::fs::OpenOptions;
 use std::io::Write;
 use std::path::Path;
 use storage::storage::Storage;
-use tempfile::{tempdir, NamedTempFile};
+use tempfile::{NamedTempFile, tempdir};
 use tx::tx_data::TxData;
 use wallet::wallet::Wallet;
 
@@ -21,9 +21,7 @@ async fn add_valid_block() {
 
     let state = State::new(wallet.clone());
     let block = storage.find_latest_block().expect("Can't find block");
-    let latest_event_hash = storage
-        .find_latest_event_hash()
-        .expect("Invalid event hash");
+    let latest_event_hash = storage.find_latest_event_hash();
     state
         .update(
             block.hash_str(),

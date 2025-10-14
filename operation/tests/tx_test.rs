@@ -103,3 +103,22 @@ fn valid_stake() {
     }
     assert_eq!(stakes.get(&from.address_str()).unwrap().stake(), BigInt::from_str("1").unwrap());
 }
+
+#[test]
+fn wrong_nonce_value() {
+    let mut balances = HashMap::new();
+    let mut stakes = BTreeMap::new();
+
+    let from = Wallet::new();
+    balances.insert(from.address_str(), Balance {
+        wallet: from.address_str(),
+        amount: BigDecimal::from_str("1").unwrap(),
+        nonce: 0,
+    });
+
+    let to = Wallet::new();
+    let tx_data = TxData::new(&from, to.address_str(), String::from("0.001"), 0).unwrap();
+    let tx = Tx::from_tx(tx_data, String::default(), 1);
+    let err = process_tx(&tx, &mut balances, &mut stakes).expect("Nonce validation failure");
+    assert_eq!(err, "Invalid nonce, expected: 1, was: 0");
+}

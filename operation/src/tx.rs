@@ -20,13 +20,20 @@ pub fn process_tx(
         } else {
             balance.amount += tx.amount();
         }
+        let expected_nonce = balance.nonce + 1;
+        if tx.nonce() != expected_nonce {
+            return Some(format!(
+                "Invalid nonce, expected: {}, was: {}",
+                expected_nonce,
+                tx.nonce()
+            ));
+        }
+        balance.nonce = tx.nonce();
     } else if tx.block != 0 {
         return Some(String::from("Not enough balance"));
     }
     if tx.to() == STAKE_WALLET {
-        let stake = stakes
-            .entry(tx.from())
-            .or_insert(Stake::empty(tx.from()));
+        let stake = stakes.entry(tx.from()).or_insert(Stake::empty(tx.from()));
         if let Some(value) = tx.amount().to_bigint() {
             stake.stake += value;
         } else {

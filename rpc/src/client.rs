@@ -50,6 +50,7 @@ impl RpcClient {
         if let Ok(response) = self
             .client
             .post("/api/txs")
+            .header("Content-Type", "application/json")
             .body(InMemoryBody::Json(serde_json::to_value(tx).unwrap()))
             .send()
             .await

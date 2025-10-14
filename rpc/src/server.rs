@@ -108,6 +108,10 @@ impl AppState {
         }
     }
 
+    async fn get_wallet_txs(&self, wallet: String) -> Vec<Tx> {
+        self.storage.find_wallet_txs(wallet)
+    }
+
     fn address_to_peer_id(&self, address: String) -> Option<PeerId> {
         let Ok(public) = bs58::decode(address).into_vec() else {
             return None;
@@ -142,6 +146,7 @@ pub async fn run(
     let app = Router::new()
         .route("/api/blocks/{idx}", get(find_block_by_idx))
         .route("/api/wallets/{wallet}", get(get_nonce))
+        .route("/api/wallets/{wallet}/txs", get(get_wallet_txs))
         .route("/api/txs", post(add_tx))
         .with_state(state);
 
@@ -171,6 +176,14 @@ async fn get_nonce(
 ) -> Result<Json<WalletInfo>, AppError> {
     let nonce = state.get_nonce(wallet).await;
     Ok(Json(WalletInfo { nonce }))
+}
+
+#[axum::debug_handler]
+async fn get_wallet_txs(
+    Path(wallet): Path<String>,
+    state: State<Arc<AppState>>,
+) -> Result<Json<Vec<Tx>>, AppError> {
+    Ok(Json(state.get_wallet_txs(wallet).await))
 }
 
 #[axum::debug_handler]

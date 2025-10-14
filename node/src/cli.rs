@@ -109,8 +109,8 @@ async fn add_tx(keystore: String, wallet: String, node: String, to: String, amou
         exit(1);
     };
     let client = RpcClient::new(node);
-    let nonce = client.get_nonce(wallet.address_str()).await;
-    let Ok(tx) = TxData::new(&wallet, to, amount, nonce) else {
+    let next_nonce = client.get_nonce(wallet.address_str()).await + 1;
+    let Ok(tx) = TxData::new(&wallet, to, amount, next_nonce) else {
         eprintln!("Can't create new transaction");
         exit(1);
     };

@@ -41,13 +41,15 @@ impl Node {
         let storage = Arc::new(Storage::new(path));
         let state = Arc::new(State::new(wallet.clone()));
         if let Some(latest_block) = storage.find_latest_block() {
-            state.update(
-                latest_block.hash_str(),
-                latest_block.idx() + 1,
-                latest_block.last_event(),
-                storage.balances(),
-                storage.stakes(),
-            ).await;
+            state
+                .update(
+                    latest_block.hash_str(),
+                    latest_block.idx() + 1,
+                    latest_block.last_event(),
+                    storage.balances(),
+                    storage.stakes(),
+                )
+                .await;
         }
         Self {
             http_port: config.http_port(),
@@ -88,8 +90,9 @@ impl Node {
             self.wallet.address_str(),
             &self.storage,
             &self.state,
-            client
-        ).await;
+            client,
+        )
+        .await;
     }
 
     async fn start_validator(&self, block_tx: Sender<Block>) -> Result<(), Box<dyn Error>> {
@@ -108,13 +111,16 @@ impl Node {
                             if let Err(e) = storage.add_block(&block) {
                                 error!("Error adding block: {}", e);
                             } else {
-                                state.update(
-                                    block.hash_str(),
-                                    block.idx() + 1,
-                                    block.last_event(),
-                                    storage.balances(),
-                                    storage.stakes(),
-                                ).await;
+                                let last_event = storage.find_latest_event_hash();
+                                state
+                                    .update(
+                                        block.hash_str(),
+                                        block.idx() + 1,
+                                        last_event,
+                                        storage.balances(),
+                                        storage.stakes(),
+                                    )
+                                    .await;
                                 if let Err(e) = block_tx.send(block).await {
                                     error!("Error sending block: {}", e);
                                 }
@@ -142,13 +148,15 @@ impl Node {
                     if let Err(_) = self.storage.add_block(&block) {
                         break;
                     } else {
-                        self.state.update(
-                            block.hash_str(),
-                            block.idx() + 1,
-                            block.last_event(),
-                            self.storage.balances(),
-                            self.storage.stakes(),
-                        ).await;
+                        self.state
+                            .update(
+                                block.hash_str(),
+                                block.idx() + 1,
+                                block.last_event(),
+                                self.storage.balances(),
+                                self.storage.stakes(),
+                            )
+                            .await;
                     }
                 }
                 None => synced = true,
