@@ -51,7 +51,7 @@ pub async fn p2p_test() {
         .await
         .unwrap();
 
-    let public = libp2p::identity::ecdsa::PublicKey::try_from_bytes(&wallet.address()).unwrap();
+    let public = libp2p::identity::secp256k1::PublicKey::try_from_bytes(&wallet.address()).unwrap();
     let public = libp2p::identity::PublicKey::from(public);
     let peer_id = PeerId::from(public);
     println!("peer id: {:?}", peer_id);

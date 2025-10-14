@@ -37,7 +37,7 @@ async fn add_valid_block() {
     assert!(tx1.valid());
     assert_eq!(tx1.prev_hash.clone(), block.txs.unwrap()[1].hash_str());
 
-    let tx2 = TxData::new(&wallet, wallet.address_str(), String::from("10"), 2).unwrap();
+    let tx2 = TxData::new(&wallet, wallet.address_str(), String::from("10"), 3).unwrap();
     let tx2 = state.add_tx(tx2).await.unwrap();
     assert!(tx2.valid());
     assert_eq!(tx2.prev_hash.clone(), tx1.hash_str());

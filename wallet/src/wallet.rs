@@ -1,26 +1,26 @@
 use crypto::crypto::{decrypt_data, derive_key, encrypt_data, restore_key};
-use libp2p::identity::ecdsa;
+use libp2p::identity::secp256k1;
 use std::fs;
 use std::fs::{File, OpenOptions};
 use std::io::{Read, Write};
 
 #[derive(Clone, Debug)]
 pub struct Wallet {
-    keypair: ecdsa::Keypair,
+    keypair: secp256k1::Keypair,
 }
 
 impl Wallet {
     pub fn new() -> Self {
-        let secret = ecdsa::SecretKey::generate();
-        let keypair = ecdsa::Keypair::from(secret);
+        let secret = secp256k1::SecretKey::generate();
+        let keypair = secp256k1::Keypair::from(secret);
         Self { keypair }
     }
 
-    pub fn keypair(&self) -> ecdsa::Keypair {
+    pub fn keypair(&self) -> secp256k1::Keypair {
         self.keypair.clone()
     }
 
-    pub fn address(&self) -> Vec<u8> {
+    pub fn address(&self) -> [u8; 33] {
         self.keypair.public().to_bytes()
     }
 
@@ -28,7 +28,7 @@ impl Wallet {
         bs58::encode(self.address()).into_string()
     }
 
-    pub fn secret(&self) -> Vec<u8> {
+    pub fn secret(&self) -> [u8; 32] {
         self.keypair.secret().to_bytes()
     }
 
@@ -47,14 +47,15 @@ impl Wallet {
         file.read_to_end(&mut data)?;
         let key = restore_key(&salt, password)?;
         let secret = decrypt_data(&key, data.as_slice(), &nonce)?;
+        let secret: [u8; 32] = secret.try_into().unwrap();
         Self::from_secret(secret)
     }
 
-    pub fn from_secret(secret: Vec<u8>) -> Result<Self, std::io::Error> {
-        let secret = ecdsa::SecretKey::try_from_bytes(secret)
+    pub fn from_secret(secret: [u8; 32]) -> Result<Self, std::io::Error> {
+        let secret = secp256k1::SecretKey::try_from_bytes(secret)
             .map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidInput, e.to_string()))?;
         Ok(Wallet {
-            keypair: ecdsa::Keypair::from(secret),
+            keypair: secp256k1::Keypair::from(secret),
         })
     }
 
@@ -62,6 +63,7 @@ impl Wallet {
         let secret = bs58::decode(secret)
             .into_vec()
             .map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidInput, e.to_string()))?;
+        let secret: [u8; 32] = secret.try_into().unwrap();
         Self::from_secret(secret)
     }
 
@@ -81,6 +83,11 @@ impl Wallet {
     }
 
     pub fn sign(&self, data: &[u8; 32]) -> Result<String, std::io::Error> {
-        Ok(bs58::encode(self.keypair.sign(data)).into_string())
+        Ok(bs58::encode(self.keypair.secret().sign(data)).into_string())
+    }
+
+    pub fn verify(&self, data: &[u8; 32], signature: String) -> bool {
+        let signature = bs58::encode(signature).into_vec();
+        self.keypair.public().verify(data, &signature)
     }
 }

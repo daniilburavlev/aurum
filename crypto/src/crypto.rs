@@ -1,5 +1,5 @@
-use aes_gcm::KeyInit;
 use aes_gcm::aead::Aead;
+use aes_gcm::KeyInit;
 use argon2::PasswordHasher;
 use rand::RngCore;
 
@@ -64,12 +64,8 @@ pub fn decrypt_data(
     Ok(text)
 }
 
-pub fn verify_signature(public_key: Vec<u8>, signature: &String, data: &[u8; 32]) -> bool {
-    if public_key.len() != 65 {
-        return false;
-    }
-    let key_bytes: [u8; 65] = public_key.try_into().unwrap();
-    match libp2p::identity::ecdsa::PublicKey::try_from_bytes(&key_bytes) {
+pub fn verify_signature(public_key: [u8; 33], signature: &String, data: &[u8; 32]) -> bool {
+    match libp2p::identity::secp256k1::PublicKey::try_from_bytes(&public_key) {
         Ok(public_key) => match bs58::decode(signature).into_vec() {
             Ok(signature) => public_key.verify(data, &signature),
             Err(_) => false,

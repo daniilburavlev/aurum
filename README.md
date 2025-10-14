@@ -42,13 +42,13 @@ To initialize new blockchain run `node init --storage <PATH_TO_STORAGE> --genesi
 [
   {
     "from": "GENESIS",
-    "to": "MiAjAWn2QWzai3f1gP1EHASoQor26wpHqPnV1uEmsUK7rKTZNJfKNmuQEEUUFUi25RiGay9pXkAHq6NWMvJvvJQA",
+    "to": "z8TWw9FD1MStBqrvEs5R6E4Gbpenf5tPDKFSK9TdFFax",
     "amount": "2653090",
     "nonce": 1,
     "signature": "GENESIS_8bb67f35694c47a6ae6038f8c0511c42"
   },
   {
-    "from": "MiAjAWn2QWzai3f1gP1EHASoQor26wpHqPnV1uEmsUK7rKTZNJfKNmuQEEUUFUi25RiGay9pXkAHq6NWMvJvvJQA",
+    "from": "z8TWw9FD1MStBqrvEs5R6E4Gbpenf5tPDKFSK9TdFFax",
     "to": "STAKE",
     "amount": "100",
     "nonce": 1,
@@ -119,7 +119,7 @@ To stake/unstake amount run `xchg new-tx --keystore <PATH> --wallet <YOUR_WALLET
 xchg new-tx --keystore /user/username/.xchg/keystore \
   --node http://201.88.8.122:9080 \
   --to STAKE
-  --wallet MiAjAWn2QWzai3f1gP1EHASoQor26wpHqPnV1uEmsUK7rKTZNJfKNmuQEEUUFUi25RiGay9pXkAHq6NWMvJvvJQA \
+  --wallet z8TWw9FD1MStBqrvEs5R6E4Gbpenf5tPDKFSK9TdFFax \
   --amount 90
 ```
 
@@ -140,7 +140,7 @@ Response
         {
             "data": {
                 "from": "GENESIS",
-                "to": "MiAjAWn2QWzai3f1gP1EHASoQor26wpHqPnV1uEmsUK7rKTZNJfKNmuQEEUUFUi25RiGay9pXkAHq6NWMvJvvJQA",
+                "to": "z8TWw9FD1MStBqrvEs5R6E4Gbpenf5tPDKFSK9TdFFax",
                 "amount": "2653090",
                 "nonce": 1,
                 "signature": "GENESIS_8bb67f35694c47a6ae6038f8c0511c42"
@@ -151,7 +151,7 @@ Response
         },
         {
             "data": {
-                "from": "MiAjAWn2QWzai3f1gP1EHASoQor26wpHqPnV1uEmsUK7rKTZNJfKNmuQEEUUFUi25RiGay9pXkAHq6NWMvJvvJQA",
+                "from": "z8TWw9FD1MStBqrvEs5R6E4Gbpenf5tPDKFSK9TdFFax",
                 "to": "STAKE",
                 "amount": "100",
                 "nonce": 1,

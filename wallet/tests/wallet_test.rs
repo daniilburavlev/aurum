@@ -1,3 +1,4 @@
+use libp2p::PeerId;
 use wallet::wallet::Wallet;
 
 const WALLET_PASSWORD: &[u8] = b"password";
@@ -19,4 +20,14 @@ fn recreate_wallet() {
     assert_eq!(wallet.secret(), restored.secret());
     let restored = Wallet::from_secret_str(wallet.secret_str()).unwrap();
     assert_eq!(wallet.secret(), restored.secret());
+}
+
+#[test]
+fn generate_peer_id() {
+    let wallet = Wallet::new();
+    let public = wallet.address();
+    let public = libp2p::identity::secp256k1::PublicKey::try_from_bytes(&public).unwrap();
+    let public = libp2p::identity::PublicKey::from(public);
+    let peer_id = PeerId::from_public_key(&public);
+    println!("peer id: {:?}", peer_id);
 }

@@ -116,7 +116,7 @@ impl AppState {
         let Ok(public) = bs58::decode(address).into_vec() else {
             return None;
         };
-        let Ok(public) = libp2p::identity::ecdsa::PublicKey::try_from_bytes(public.as_slice())
+        let Ok(public) = libp2p::identity::secp256k1::PublicKey::try_from_bytes(public.as_slice())
         else {
             return None;
         };

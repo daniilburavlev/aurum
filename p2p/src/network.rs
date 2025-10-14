@@ -72,13 +72,13 @@ enum Command {
 }
 
 pub async fn new(
-    secret: Vec<u8>,
+    secret: [u8; 32],
     storage: &Arc<Storage>,
     state: &Arc<State>,
     block_rx: Receiver<Block>,
 ) -> Result<(Client, EventLoop), Box<dyn Error>> {
-    let secret = libp2p::identity::ecdsa::SecretKey::try_from_bytes(secret).unwrap();
-    let keypair = libp2p::identity::ecdsa::Keypair::from(secret);
+    let secret = libp2p::identity::secp256k1::SecretKey::try_from_bytes(secret).unwrap();
+    let keypair = libp2p::identity::secp256k1::Keypair::from(secret);
     let keypair = libp2p::identity::Keypair::from(keypair);
     let peer_id = keypair.public().to_peer_id();
 

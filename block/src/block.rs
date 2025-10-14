@@ -90,7 +90,13 @@ impl Block {
             }
         }
         match bs58::decode(self.validator.clone()).into_vec() {
-            Ok(public_key) => verify_signature(public_key, &self.signature, &self.hash()),
+            Ok(public_key) => {
+                if let Ok(public_key) = public_key.try_into() {
+                    verify_signature(public_key, &self.signature, &self.hash())
+                } else {
+                    false
+                }
+            }
             Err(_) => false,
         }
     }
