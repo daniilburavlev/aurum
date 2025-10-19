@@ -389,7 +389,7 @@ dependencies = [
 
 [[package]]
 name = "balance"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "common",
  "db",
@@ -495,7 +495,7 @@ dependencies = [
 
 [[package]]
 name = "block"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "bs58",
  "crypto",
@@ -705,7 +705,7 @@ checksum = "b05b61dc5112cbb17e4b6cd61790d9845d13888356391624cbe7e41efeac1e75"
 
 [[package]]
 name = "common"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "bigdecimal",
  "serde",
@@ -835,7 +835,7 @@ checksum = "460fbee9c2c2f33933d720630a6a0bac33ba7053db5344fac858d4b8952d77d5"
 
 [[package]]
 name = "crypto"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "aes-gcm",
  "argon2",
@@ -931,7 +931,7 @@ dependencies = [
 
 [[package]]
 name = "db"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "rocksdb",
 ]
@@ -2825,7 +2825,7 @@ checksum = "d05e27ee213611ffe7d6348b942e8f942b37114c00cc03cec254295a4a17852e"
 
 [[package]]
 name = "operation"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "balance",
  "common",
@@ -2836,9 +2836,10 @@ dependencies = [
 
 [[package]]
 name = "p2p"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "block",
+ "common",
  "futures",
  "libp2p",
  "log",
@@ -3327,11 +3328,12 @@ dependencies = [
 
 [[package]]
 name = "rpc"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "axum",
  "block",
  "bs58",
+ "common",
  "futures",
  "httpclient",
  "libp2p",
@@ -3744,7 +3746,7 @@ checksum = "6ce2be8dc25455e1f91df71bfa12ad37d7af1092ae736f3a6cd0e37bc7810596"
 
 [[package]]
 name = "stake"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "common",
  "db",
@@ -3756,7 +3758,7 @@ dependencies = [
 
 [[package]]
 name = "state"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "balance",
  "block",
@@ -3778,7 +3780,7 @@ checksum = "a2eb9349b6444b326872e140eb1cf5e7c522154d69e7a0ffb0fb81c06b37543f"
 
 [[package]]
 name = "storage"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "balance",
  "block",
@@ -4118,7 +4120,7 @@ checksum = "e421abadd41a4225275504ea4d6566923418b7f05506fbc9c0fe86ba7396114b"
 
 [[package]]
 name = "tx"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "bs58",
  "common",
@@ -4249,7 +4251,7 @@ dependencies = [
 
 [[package]]
 name = "wallet"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "bs58",
  "crypto",
@@ -4752,10 +4754,11 @@ dependencies = [
 
 [[package]]
 name = "xchg"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "block",
  "clap",
+ "common",
  "flexi_logger",
  "libp2p",
  "log",

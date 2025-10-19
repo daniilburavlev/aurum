@@ -62,4 +62,16 @@ impl Tx {
         }
         self.hash == self.hash_str() && self.data.valid()
     }
+
+    pub fn fee(&self) -> BigDecimal {
+        self.data.fee()
+    }
+
+    pub fn fee_amount(&self) -> BigDecimal {
+        self.data.fee_amount()
+    }
+
+    pub fn amount_with_fee(&self) -> BigDecimal {
+        self.amount() + self.fee()
+    }
 }

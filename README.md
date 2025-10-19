@@ -44,6 +44,7 @@ To initialize new blockchain run `node init --storage <PATH_TO_STORAGE> --genesi
     "from": "GENESIS",
     "to": "z8TWw9FD1MStBqrvEs5R6E4Gbpenf5tPDKFSK9TdFFax",
     "amount": "2653090",
+    "fee": "0",
     "nonce": 1,
     "signature": "GENESIS_8bb67f35694c47a6ae6038f8c0511c42"
   },
@@ -51,6 +52,7 @@ To initialize new blockchain run `node init --storage <PATH_TO_STORAGE> --genesi
     "from": "z8TWw9FD1MStBqrvEs5R6E4Gbpenf5tPDKFSK9TdFFax",
     "to": "STAKE",
     "amount": "100",
+    "fee": "0",
     "nonce": 1,
     "signature": "GENESIS_aade396bfc964afdbeee22e5fbdf2c72"
   }

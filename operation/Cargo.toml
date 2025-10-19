@@ -7,7 +7,7 @@ edition.workspace = true
 tx = { path = "../tx" }
 balance = { path = "../balance" }
 stake = { path = "../stake" }
+common = { path = "../common" }
 
 [dev-dependencies]
 wallet = { path = "../wallet" }
-common = { path = "../common" }

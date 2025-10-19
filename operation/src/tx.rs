@@ -1,4 +1,5 @@
 use balance::balance::Balance;
+use common::bigdecimal::BigDecimal;
 use stake::stake::Stake;
 use std::collections::{BTreeMap, HashMap};
 use tx::tx::Tx;
@@ -7,18 +8,29 @@ const STAKE_WALLET: &str = "STAKE";
 const UNSTAKE_WALLET: &str = "UNSTAKE";
 
 pub fn process_tx(
+    validator: String,
     tx: &Tx,
     balances: &mut HashMap<String, Balance>,
     stakes: &mut BTreeMap<String, Stake>,
 ) -> Option<String> {
+    let validator = balances.entry(validator.clone()).or_insert(Balance {
+        wallet: validator,
+        nonce: 0,
+        amount: BigDecimal::zero(),
+    });
+    validator.amount += tx.fee();
     if let Some(balance) = balances.get_mut(&tx.from()) {
         if tx.to() != UNSTAKE_WALLET {
-            if balance.amount < tx.amount() && tx.block != 0 {
+            if balance.amount < tx.amount_with_fee() && tx.block != 0 {
                 return Some(String::from("Not enough balance"));
             }
-            balance.amount -= tx.amount();
+            balance.amount -= tx.amount_with_fee();
         } else {
+            if balance.amount < tx.fee() && tx.block != 0 {
+                return Some(String::from("Not enough balance"));
+            }
             balance.amount += tx.amount();
+            balance.amount -= tx.fee();
         }
         let expected_nonce = balance.nonce + 1;
         if tx.nonce() != expected_nonce {

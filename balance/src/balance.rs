@@ -22,4 +22,12 @@ impl Balance {
     pub fn wallet(&self) -> String {
         self.wallet.clone()
     }
+    
+    pub fn nonce(&self) -> u64 {
+        self.nonce
+    }
+    
+    pub fn amount(&self) -> BigDecimal {
+        self.amount.clone()
+    }
 }

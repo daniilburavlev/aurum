@@ -9,7 +9,14 @@ use wallet::wallet::Wallet;
 fn test_block_save() {
     let temp_dir = tempdir().unwrap();
     let wallet = Wallet::new();
-    let tx_data = TxData::new(&wallet, wallet.address_str(), String::from("0.001"), 1).unwrap();
+    let tx_data = TxData::new(
+        &wallet,
+        wallet.address_str(),
+        String::from("0.001"),
+        String::from("0"),
+        1,
+    )
+    .unwrap();
     let tx = Tx::from_tx(tx_data, String::default(), 0);
     let txs = vec![tx];
     let block = Block::genesis(txs);

@@ -1,6 +1,8 @@
 use crate::schema::{ErrorResponse, WalletInfo};
 use block::block::Block;
+use common::bigdecimal::BigDecimal;
 use httpclient::{Client, InMemoryBody, ResponseExt};
+use p2p::network::FeeResponse;
 use tx::tx_data::TxData;
 
 pub struct RpcClient {
@@ -44,6 +46,17 @@ impl RpcClient {
         } else {
             0
         }
+    }
+
+    pub async fn get_current_fee(&self) -> Result<BigDecimal, String> {
+        if let Ok(response) = self.client.get("/api/fee").send().await {
+            if response.status().as_u16() == 200 {
+                let body = response.text().await;
+                let body: FeeResponse = serde_json::from_str(&body.unwrap()).unwrap();
+                return Ok(body.fee);
+            }
+        }
+        Err(String::from("Failed to get current fee with RPC"))
     }
 
     pub async fn add_tx(&self, tx: TxData) -> Option<String> {

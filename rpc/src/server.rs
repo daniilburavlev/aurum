@@ -6,7 +6,7 @@ use axum::routing::{get, post};
 use axum::{Json, Router};
 use block::block::Block;
 use libp2p::PeerId;
-use p2p::network::Client;
+use p2p::network::{Client, FeeResponse};
 use serde::Serialize;
 use std::sync::Arc;
 use storage::storage::Storage;
@@ -32,6 +32,11 @@ impl P2pClientHolder {
     async fn add_tx(&self, data: TxData, peer_id: PeerId) -> Result<Tx, String> {
         let mut client = self.client.lock().await;
         client.add_tx(data, peer_id).await
+    }
+
+    async fn get_fee(&self, peer_id: PeerId) -> FeeResponse {
+        let mut client = self.client.lock().await;
+        client.get_fee(peer_id).await
     }
 }
 
@@ -108,6 +113,21 @@ impl AppState {
         }
     }
 
+    async fn get_fee(&self) -> Result<FeeResponse, String> {
+        let current_validator = self.get_current_validator();
+        if current_validator == self.wallet {
+            Ok(FeeResponse {
+                fee: self.state.current_fee().await,
+            })
+        } else {
+            if let Some(peer_id) = self.address_to_peer_id(current_validator) {
+                Ok(self.client.get_fee(peer_id).await)
+            } else {
+                Err(String::from("Internal server error"))
+            }
+        }
+    }
+
     async fn get_wallet_txs(&self, wallet: String) -> Vec<Tx> {
         self.storage.find_wallet_txs(wallet)
     }
@@ -148,6 +168,7 @@ pub async fn run(
         .route("/api/wallets/{wallet}", get(get_nonce))
         .route("/api/wallets/{wallet}/txs", get(get_wallet_txs))
         .route("/api/txs", post(add_tx))
+        .route("/api/fee", get(get_fee))
         .with_state(state);
 
     println!("Listening http RPC on port: {}", port);
@@ -193,6 +214,16 @@ async fn add_tx(
 ) -> Result<Json<Tx>, AppError> {
     match state.add_tx(data).await {
         Ok(tx) => Ok(Json(tx)),
+        Err(err) => Err(AppError::BadRequest(err)),
+    }
+}
+
+#[axum::debug_handler]
+async fn get_fee(
+    state: State<Arc<AppState>>,
+) -> Result<Json<FeeResponse>, AppError> {
+    match state.get_fee().await {
+        Ok(fee) => Ok(Json(fee)),
         Err(err) => Err(AppError::BadRequest(err)),
     }
 }

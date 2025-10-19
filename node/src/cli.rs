@@ -2,6 +2,7 @@ use crate::config::Config;
 use crate::logger::init_logger;
 use crate::node::Node;
 use clap::{Parser, Subcommand};
+use common::bigdecimal::BigDecimal;
 use rpc::client::RpcClient;
 use std::process::exit;
 use tx::tx_data::TxData;
@@ -110,7 +111,13 @@ async fn add_tx(keystore: String, wallet: String, node: String, to: String, amou
     };
     let client = RpcClient::new(node);
     let next_nonce = client.get_nonce(wallet.address_str()).await + 1;
-    let Ok(tx) = TxData::new(&wallet, to, amount, next_nonce) else {
+    let Ok(fee_amount) = client.get_current_fee().await else {
+        eprintln!("Can't load current fee amount");
+        exit(1);
+    };
+    let fee = fee_amount * BigDecimal::from_str(&amount).unwrap();
+
+    let Ok(tx) = TxData::new(&wallet, to, amount, fee.to_string(), next_nonce) else {
         eprintln!("Can't create new transaction");
         exit(1);
     };

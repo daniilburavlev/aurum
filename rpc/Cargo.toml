@@ -6,6 +6,7 @@ edition.workspace = true
 [dependencies]
 block = { path = "../block" }
 tx = { path = "../tx" }
+common = { path = "../common" }
 storage = { path = "../storage" }
 state = { path = "../state" }
 p2p = { path = "../p2p" }

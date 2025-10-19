@@ -60,6 +60,10 @@ impl Block {
         hasher.update(self.merkle_root.as_bytes());
         hasher.finalize().into()
     }
+    
+    pub fn validator(&self) -> String {
+        self.validator.clone()
+    }
 
     pub fn idx(&self) -> u64 {
         self.idx

@@ -3,6 +3,7 @@ use balance::balance::Balance;
 use block::block::Block;
 use stake::stake::Stake;
 use std::collections::{BTreeMap, HashMap};
+use common::bigdecimal::BigDecimal;
 use tx::tx::Tx;
 use tx::tx_data::TxData;
 use wallet::wallet::Wallet;
@@ -43,5 +44,10 @@ impl State {
     pub async fn new_block(&self, validator: String) -> Option<Block> {
         let mut mem_pool = self.mem_pool.lock().await;
         mem_pool.new_block(validator)
+    }
+    
+    pub async fn current_fee(&self) -> BigDecimal {
+        let mem_pool = self.mem_pool.lock().await;
+        mem_pool.current_fee()
     }
 }

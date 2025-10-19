@@ -10,9 +10,9 @@ operation = { path = "../operation" }
 balance = { path = "../balance" }
 tx = { path = "../tx" }
 wallet = { path = "../wallet" }
+common = { path = "../common" }
 log = { workspace = true }
 futures = { workspace = true }
 
 [dev-dependencies]
-common = { path = "../common" }
 tokio = { workspace = true }

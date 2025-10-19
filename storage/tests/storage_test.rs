@@ -71,8 +71,8 @@ fn wallet_with_balance(wallet: &Wallet, path: &Path) -> Result<(), std::io::Erro
         .truncate(true)
         .open(path)?;
     let json = format!(
-        "[{{\"from\": \"GENESIS\",\"to\": \"{}\",\"amount\": \"1000000\",\"nonce\": 1,\"signature\": \"GENESIS\"}},\
-        {{\"from\": \"{}\",\"to\": \"STAKE\",\"amount\": \"500000\",\"nonce\": 1,\"signature\": \"GENESIS\"}}]",
+        "[{{\"from\": \"GENESIS\",\"to\": \"{}\",\"amount\": \"1000000\",\"fee\": \"0\",\"nonce\": 1,\"signature\": \"GENESIS\"}},\
+        {{\"from\": \"{}\",\"to\": \"STAKE\",\"amount\": \"500000\",\"fee\": \"0\",\"nonce\": 1,\"signature\": \"GENESIS\"}}]",
         wallet.address_str(),
         wallet.address_str()
     );

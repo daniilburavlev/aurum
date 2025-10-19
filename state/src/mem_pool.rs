@@ -1,5 +1,6 @@
 use balance::balance::Balance;
 use block::block::Block;
+use common::bigdecimal::BigDecimal;
 use log::debug;
 use operation::tx::process_tx;
 use stake::stake::Stake;
@@ -7,6 +8,8 @@ use std::collections::{BTreeMap, HashMap};
 use tx::tx::Tx;
 use tx::tx_data::TxData;
 use wallet::wallet::Wallet;
+
+static INITIAL_FEE: &str = "0.00000000001";
 
 #[derive(Debug)]
 pub struct MemPool {
@@ -51,8 +54,16 @@ impl MemPool {
         if !tx_data.valid() {
             return Err("Invalid transaction".to_string());
         }
+        if tx_data.fee_amount() < self.current_fee() {
+            return Err(String::from("Fee is to low"));
+        }
         let tx = Tx::from_tx(tx_data, self.last_event.clone(), self.current_block);
-        if let Some(err) = process_tx(&tx, &mut self.balances, &mut self.stakes) {
+        if let Some(err) = process_tx(
+            self.wallet.address_str(),
+            &tx,
+            &mut self.balances,
+            &mut self.stakes,
+        ) {
             Err(err)
         } else {
             self.pending_txs.push(tx.clone());
@@ -85,5 +96,14 @@ impl MemPool {
         } else {
             None
         }
+    }
+
+    pub fn current_fee(&self) -> BigDecimal {
+        let current_txs = self.pending_txs.len();
+        if current_txs == 0 {
+            return BigDecimal::from_str(INITIAL_FEE).unwrap();
+        }
+        let current_txs = BigDecimal::from_usize(current_txs).unwrap();
+        current_txs * BigDecimal::from_str(INITIAL_FEE).unwrap()
     }
 }

@@ -12,6 +12,7 @@ serde_json = { workspace = true }
 block = { path = "../block" }
 wallet = { path = "../wallet" }
 storage = { path = "../storage" }
+common = { path = "../common" }
 state = { path = "../state" }
 tx = { path = "../tx" }
 log = "0.4.28"

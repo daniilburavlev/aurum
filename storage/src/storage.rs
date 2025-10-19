@@ -116,7 +116,7 @@ impl Storage {
                 )
                 .into());
             }
-            if self.save_txs(&txs, block.idx)? {
+            if self.save_txs(&txs, block.validator(), block.idx)? {
                 self.block_storage.save(&block)?;
             } else {
                 return Err("Invalid transactions".into());
@@ -157,7 +157,12 @@ impl Storage {
         bs58::encode(data).into_string()
     }
 
-    fn save_txs(&self, txs: &Vec<Tx>, block: u64) -> Result<bool, Box<dyn Error>> {
+    fn save_txs(
+        &self,
+        txs: &Vec<Tx>,
+        validator: String,
+        block_idx: u64,
+    ) -> Result<bool, Box<dyn Error>> {
         let mut wallets = HashSet::new();
         for tx in txs {
             if !tx.valid() {
@@ -169,7 +174,7 @@ impl Storage {
         let mut balances = self.balance_storage.find_all(&wallets)?;
         let mut stakes = self.stake_storage.find_all(&wallets)?;
         for tx in txs {
-            if let Some(err) = process_tx(&tx, &mut balances, &mut stakes) {
+            if let Some(err) = process_tx(validator.clone(), &tx, &mut balances, &mut stakes) {
                 debug!("Invalid tx: {}", err);
                 return Ok(false);
             }
@@ -178,7 +183,7 @@ impl Storage {
         let stakes: Vec<Stake> = stakes.into_values().collect();
         self.balance_storage.save_all(&balances)?;
         self.stake_storage.save_all(&stakes)?;
-        self.tx_storage.save(txs, block)?;
+        self.tx_storage.save(txs, block_idx)?;
         Ok(true)
     }
 

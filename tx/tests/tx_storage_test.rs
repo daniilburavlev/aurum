@@ -14,7 +14,7 @@ fn test_tx_storage_save_find_by_hash() -> Result<(), std::io::Error> {
     let tx_storage = TxStorage::new(&db);
     let from = Wallet::new();
     let to = Wallet::new();
-    let tx_data = TxData::new(&from, to.address_str(), String::from("10"), 1)?;
+    let tx_data = TxData::new(&from, to.address_str(), String::from("10"), String::from("10"), 1)?;
     let tx = Tx::from_tx(tx_data, String::default(), 0);
     tx_storage.save(&vec![tx.clone()], 0)?;
     assert_eq!(tx_storage.find_latest_hash()?.unwrap(), tx.hash_str());

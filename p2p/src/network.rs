@@ -1,4 +1,5 @@
 use block::block::Block;
+use common::bigdecimal::BigDecimal;
 use futures::{
     channel::{mpsc, oneshot},
     prelude::*,
@@ -32,6 +33,7 @@ pub struct P2pBehaviour {
     get_nonce: request_response::json::Behaviour<NonceRequest, NonceResponse>,
     find_block: request_response::json::Behaviour<BlockRequest, BlockResponse>,
     add_tx: request_response::json::Behaviour<TxData, TxResponse>,
+    get_fee: request_response::json::Behaviour<FeeRequest, FeeResponse>,
 }
 
 #[derive(Debug)]
@@ -68,6 +70,10 @@ enum Command {
         data: TxData,
         peer: PeerId,
         sender: oneshot::Sender<Result<Tx, String>>,
+    },
+    GetFee {
+        peer: PeerId,
+        sender: oneshot::Sender<FeeResponse>,
     },
 }
 
@@ -122,6 +128,10 @@ pub async fn new(
                     [(StreamProtocol::new("/add-tx/0.0.1"), ProtocolSupport::Full)],
                     request_response::Config::default(),
                 ),
+                get_fee: request_response::json::Behaviour::new(
+                    [(StreamProtocol::new("/get-fee/0.0.1"), ProtocolSupport::Full)],
+                    request_response::Config::default(),
+                ),
             }
         })?
         .with_swarm_config(|c| c.with_idle_connection_timeout(Duration::from_secs(60)))
@@ -150,6 +160,7 @@ pub struct EventLoop {
     command_receiver: mpsc::Receiver<Command>,
     pending_get_nonce: HashMap<OutboundRequestId, oneshot::Sender<u64>>,
     pending_add_tx: HashMap<OutboundRequestId, oneshot::Sender<Result<Tx, String>>>,
+    pending_get_fee: HashMap<OutboundRequestId, oneshot::Sender<FeeResponse>>,
     pending_find_block: HashMap<OutboundRequestId, oneshot::Sender<Option<Block>>>,
     new_block_topic: IdentTopic,
     storage: Arc<Storage>,
@@ -174,6 +185,7 @@ impl EventLoop {
             pending_get_nonce: HashMap::new(),
             pending_add_tx: HashMap::new(),
             pending_find_block: HashMap::new(),
+            pending_get_fee: HashMap::new(),
             storage: Arc::clone(storage),
             state: Arc::clone(state),
             new_block_topic: IdentTopic::new("new_block"),
@@ -359,6 +371,32 @@ impl EventLoop {
                         .send(result);
                 }
             },
+            SwarmEvent::Behaviour(P2pBehaviourEvent::GetFee(
+                request_response::Event::Message { message, .. },
+            )) => match message {
+                request_response::Message::Request { channel, .. } => {
+                    let fee = self.state.current_fee().await;
+                    let response = FeeResponse { fee };
+                    if let Err(e) = self
+                        .swarm
+                        .behaviour_mut()
+                        .get_fee
+                        .send_response(channel, response)
+                    {
+                        error!("Failed to send fee: {:?}", e);
+                    }
+                }
+                request_response::Message::Response {
+                    request_id,
+                    response,
+                } => {
+                    let _ = self
+                        .pending_get_fee
+                        .remove(&request_id)
+                        .expect("Request to still be pending.")
+                        .send(response);
+                }
+            },
             SwarmEvent::Behaviour(P2pBehaviourEvent::Gossipsub(event)) => match event {
                 gossipsub::Event::Message { message, .. } => {
                     debug!("New block {:?}", message);
@@ -486,6 +524,14 @@ impl EventLoop {
                     error!("Failed to subscribe to new blocks: {:?}", e);
                 }
             }
+            Command::GetFee { peer, sender } => {
+                let request_id = self
+                    .swarm
+                    .behaviour_mut()
+                    .get_fee
+                    .send_request(&peer, FeeRequest {});
+                self.pending_get_fee.insert(request_id, sender);
+            }
         }
     }
 }
@@ -577,6 +623,15 @@ impl Client {
             .await
             .expect("Command receiver not to be dropped.");
     }
+
+    pub async fn get_fee(&mut self, peer: PeerId) -> FeeResponse {
+        let (sender, receiver) = oneshot::channel();
+        self.sender
+            .send(Command::GetFee { peer, sender })
+            .await
+            .expect("Command receiver not to be dropped.");
+        receiver.await.expect("Sender not to be dropped.")
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -603,4 +658,12 @@ pub struct BlockResponse {
 pub struct TxResponse {
     pub data: Option<Tx>,
     pub error: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct FeeRequest {}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct FeeResponse {
+    pub fee: BigDecimal,
 }

@@ -1,8 +1,9 @@
 use crate::biginteger::BigInt;
 use bigdecimal::num_bigint::ToBigInt;
+use bigdecimal::{FromPrimitive, Zero};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::cmp::Ordering;
-use std::ops::{Add, AddAssign, Deref, Sub, SubAssign};
+use std::ops::{Add, AddAssign, Deref, Div, Mul, MulAssign, Sub, SubAssign};
 use std::str::FromStr;
 
 #[derive(Clone, PartialEq, Eq, Debug)]
@@ -23,12 +24,20 @@ impl BigDecimal {
         Ok(Self(value))
     }
 
+    pub fn from_usize(value: usize) -> Result<Self, Box<dyn std::error::Error>> {
+        Ok(Self(bigdecimal::BigDecimal::from_usize(value).unwrap()))
+    }
+
     pub fn to_bigint(&self) -> Option<BigInt> {
         if let Some(value) = self.0.to_bigint() {
             Some(BigInt::from_bigint(value))
         } else {
             None
         }
+    }
+
+    pub fn zero() -> Self {
+        Self(bigdecimal::BigDecimal::zero())
     }
 }
 
@@ -60,12 +69,34 @@ impl SubAssign for BigDecimal {
     }
 }
 
+impl Mul for BigDecimal {
+    type Output = Self;
+
+    fn mul(self, rhs: Self) -> Self::Output {
+        Self(self.0 * rhs.0)
+    }
+}
+
+impl MulAssign for BigDecimal {
+    fn mul_assign(&mut self, rhs: Self) {
+        self.0 *= rhs.0;
+    }
+}
+
+impl Div for BigDecimal {
+    type Output = Self;
+
+    fn div(self, rhs: Self) -> Self::Output {
+        Self(self.0 / rhs.0)
+    }
+}
+
 impl Serialize for BigDecimal {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
     {
-        serializer.serialize_str(&self.0.to_string())
+        serializer.serialize_str(&self.0.to_plain_string())
     }
 }
 

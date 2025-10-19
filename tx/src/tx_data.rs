@@ -9,6 +9,7 @@ pub struct TxData {
     pub from: String,
     pub to: String,
     pub amount: BigDecimal,
+    pub fee: BigDecimal,
     pub nonce: u64,
     pub signature: String,
 }
@@ -18,13 +19,16 @@ impl TxData {
         wallet: &Wallet,
         to: String,
         amount: String,
+        fee: String,
         nonce: u64,
     ) -> Result<Self, std::io::Error> {
         let amount = BigDecimal::from_str(amount.as_str())?;
+        let fee = BigDecimal::from_str(fee.as_str())?;
         let mut tx = Self {
             from: wallet.address_str(),
             to,
             amount,
+            fee,
             nonce,
             signature: "".to_string(),
         };
@@ -47,6 +51,10 @@ impl TxData {
 
     pub fn nonce(&self) -> u64 {
         self.nonce
+    }
+
+    pub fn fee(&self) -> BigDecimal {
+        self.fee.clone()
     }
 
     pub fn signature(&self) -> String {
@@ -73,5 +81,12 @@ impl TxData {
             }
             Err(_) => false,
         }
+    }
+
+    pub fn fee_amount(&self) -> BigDecimal {
+        if self.fee == BigDecimal::zero() {
+            return BigDecimal::zero();
+        }
+        self.amount.clone() / self.fee.clone()
     }
 }

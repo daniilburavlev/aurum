@@ -34,7 +34,14 @@ async fn add_tx() {
         .await;
 
     assert_eq!(nonce, state.get_nonce(wallet.address_str()).await);
-    let tx = TxData::new(&wallet, String::from("to"), String::from("100"), 1).unwrap();
+    let tx = TxData::new(
+        &wallet,
+        String::from("to"),
+        String::from("100"),
+        String::from("1"),
+        1,
+    )
+    .unwrap();
     let tx = state.add_tx(tx).await.unwrap();
     println!("{:?}", tx);
 }
