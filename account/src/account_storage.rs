@@ -1,31 +1,31 @@
-use crate::balance::Balance;
+use crate::account::Account;
 use rocksdb::{DBWithThreadMode, MultiThreaded};
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeMap, HashSet};
 use std::error::Error;
 use std::sync::Arc;
 
-const ALL_BALANCE_WALLETS_KEY: &str = "balance.all_wallets";
+const ALL_ACCOUNT_WALLET_KEY: &str = "account.all_wallets";
 
-pub struct BalanceStorage {
+pub struct AccountStorage {
     db: Arc<DBWithThreadMode<MultiThreaded>>,
 }
 
-impl BalanceStorage {
+impl AccountStorage {
     pub fn new(db: &Arc<DBWithThreadMode<MultiThreaded>>) -> Self {
         Self { db: Arc::clone(db) }
     }
 
-    pub fn save(&self, balance: &Balance) -> Result<(), Box<dyn Error>> {
+    pub fn save(&self, account: &Account) -> Result<(), Box<dyn Error>> {
         let mut wallets = self.all_balances_wallets()?;
-        wallets.insert(balance.wallet());
-        let json = serde_json::to_vec(&balance)?;
-        let key = Self::build_key(&balance.wallet());
+        wallets.insert(account.wallet());
+        let json = serde_json::to_vec(&account)?;
+        let key = Self::build_key(&account.wallet());
         self.save_all_balances_wallets(&wallets)?;
         self.db.put(key, &json)?;
         Ok(())
     }
 
-    pub fn save_all(&self, balances: &Vec<Balance>) -> Result<(), Box<dyn Error>> {
+    pub fn save_all(&self, balances: &Vec<Account>) -> Result<(), Box<dyn Error>> {
         let mut wallets = self.all_balances_wallets()?;
         for balance in balances {
             wallets.insert(balance.wallet.clone());
@@ -35,15 +35,15 @@ impl BalanceStorage {
         Ok(())
     }
 
-    pub fn load_all(&self) -> Result<HashMap<String, Balance>, Box<dyn Error>> {
+    pub fn load_all(&self) -> Result<BTreeMap<String, Account>, Box<dyn Error>> {
         let wallets = self.all_balances_wallets()?;
         self.find_all(&wallets)
     }
 
-    pub fn find(&self, wallet: String) -> Result<Option<Balance>, Box<dyn Error>> {
+    pub fn find(&self, wallet: String) -> Result<Option<Account>, Box<dyn Error>> {
         let key = Self::build_key(&wallet);
         if let Some(json) = self.db.get(key)? {
-            let value: Balance = serde_json::from_slice(&json)?;
+            let value: Account = serde_json::from_slice(&json)?;
             return Ok(Some(value));
         }
         Ok(None)
@@ -52,8 +52,8 @@ impl BalanceStorage {
     pub fn find_all(
         &self,
         wallets: &HashSet<String>,
-    ) -> Result<HashMap<String, Balance>, Box<dyn Error>> {
-        let mut balances = HashMap::new();
+    ) -> Result<BTreeMap<String, Account>, Box<dyn Error>> {
+        let mut balances = BTreeMap::new();
         for wallet in wallets {
             if let Some(balance) = self.find(wallet.clone())? {
                 balances.insert(wallet.clone(), balance);
@@ -63,7 +63,7 @@ impl BalanceStorage {
     }
 
     fn all_balances_wallets(&self) -> Result<HashSet<String>, Box<dyn Error>> {
-        if let Some(wallets) = self.db.get(String::from(ALL_BALANCE_WALLETS_KEY))? {
+        if let Some(wallets) = self.db.get(String::from(ALL_ACCOUNT_WALLET_KEY))? {
             Ok(serde_json::from_slice(&wallets)?)
         } else {
             Ok(HashSet::new())
@@ -72,7 +72,7 @@ impl BalanceStorage {
 
     fn save_all_balances_wallets(&self, wallets: &HashSet<String>) -> Result<(), Box<dyn Error>> {
         let json = serde_json::to_vec(&wallets)?;
-        self.db.put(String::from(ALL_BALANCE_WALLETS_KEY), json)?;
+        self.db.put(String::from(ALL_ACCOUNT_WALLET_KEY), json)?;
         Ok(())
     }
 

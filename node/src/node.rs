@@ -46,8 +46,7 @@ impl Node {
                     latest_block.hash_str(),
                     latest_block.idx() + 1,
                     latest_block.last_event(),
-                    storage.balances(),
-                    storage.stakes(),
+                    storage.accounts(),
                 )
                 .await;
         }
@@ -117,8 +116,7 @@ impl Node {
                                         block.hash_str(),
                                         block.idx() + 1,
                                         last_event,
-                                        storage.balances(),
-                                        storage.stakes(),
+                                        storage.accounts(),
                                     )
                                     .await;
                                 if let Err(e) = block_tx.send(block).await {
@@ -153,8 +151,7 @@ impl Node {
                                 block.hash_str(),
                                 block.idx() + 1,
                                 block.last_event(),
-                                self.storage.balances(),
-                                self.storage.stakes(),
+                                self.storage.accounts(),
                             )
                             .await;
                     }

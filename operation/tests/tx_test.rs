@@ -1,9 +1,9 @@
-use balance::balance::Balance;
+use account::account::Account;
 use common::bigdecimal::BigDecimal;
 use common::biginteger::BigInt;
 use operation::tx::process_tx;
-use stake::stake::Stake;
-use std::collections::{BTreeMap, HashMap};
+use std::collections::BTreeMap;
+use std::process::exit;
 use tx::tx::Tx;
 use tx::tx_data::TxData;
 use wallet::wallet::Wallet;
@@ -12,8 +12,7 @@ const DEFAULT_VALIDATOR: &str = "";
 
 #[test]
 fn not_enough_balance_tx() {
-    let mut balances = HashMap::new();
-    let mut stakes = BTreeMap::new();
+    let mut accounts = BTreeMap::new();
     let from = Wallet::new();
     let to = Wallet::new();
     let tx_data = TxData::new(
@@ -25,12 +24,7 @@ fn not_enough_balance_tx() {
     )
     .unwrap();
     let tx = Tx::from_tx(tx_data, String::default(), 1);
-    if let Some(err) = process_tx(
-        DEFAULT_VALIDATOR.to_string(),
-        &tx,
-        &mut balances,
-        &mut stakes,
-    ) {
+    if let Err(err) = process_tx(DEFAULT_VALIDATOR.to_string(), &tx, &mut accounts) {
         assert_eq!(err, "Not enough balance");
     } else {
         assert!(false);
@@ -39,8 +33,7 @@ fn not_enough_balance_tx() {
 
 #[test]
 fn not_enough_balance_unstake() {
-    let mut balances = HashMap::new();
-    let mut stakes = BTreeMap::new();
+    let mut accounts = BTreeMap::new();
     let from = Wallet::new();
     let tx_data = TxData::new(
         &from,
@@ -51,12 +44,7 @@ fn not_enough_balance_unstake() {
     )
     .unwrap();
     let tx = Tx::from_tx(tx_data, String::default(), 1);
-    if let Some(err) = process_tx(
-        DEFAULT_VALIDATOR.to_string(),
-        &tx,
-        &mut balances,
-        &mut stakes,
-    ) {
+    if let Err(err) = process_tx(DEFAULT_VALIDATOR.to_string(), &tx, &mut accounts) {
         assert_eq!(err, "Not enough balance");
     } else {
         assert!(false);
@@ -65,24 +53,21 @@ fn not_enough_balance_unstake() {
 
 #[test]
 fn valid_unstake() {
-    let mut balances = HashMap::new();
-    let mut stakes = BTreeMap::new();
+    let mut accounts = BTreeMap::new();
     let from = Wallet::new();
-    balances.insert(
-        from.address_str(),
-        Balance {
-            wallet: from.address_str(),
-            nonce: 0,
-            amount: BigDecimal::from_str("0.01").unwrap(),
-        },
-    );
-    stakes.insert(
-        from.address_str(),
-        Stake {
-            wallet: from.address_str(),
-            stake: BigInt::from_str("10").unwrap(),
-        },
-    );
+    let mut account = Account::new(from.address_str());
+    account
+        .debit(BigDecimal::from_str("10.02").unwrap())
+        .unwrap();
+    account
+        .stake_amount(
+            BigDecimal::from_str("10").unwrap(),
+            BigDecimal::from_str("0.01").unwrap(),
+        )
+        .unwrap();
+
+    accounts.insert(from.address_str(), account);
+
     let tx_data = TxData::new(
         &from,
         String::from("UNSTAKE"),
@@ -92,40 +77,23 @@ fn valid_unstake() {
     )
     .unwrap();
     let tx = Tx::from_tx(tx_data, String::default(), 1);
-    if let Some(err) = process_tx(
-        DEFAULT_VALIDATOR.to_string(),
-        &tx,
-        &mut balances,
-        &mut stakes,
-    ) {
+    if let Err(err) = process_tx(DEFAULT_VALIDATOR.to_string(), &tx, &mut accounts) {
         assert!(false, "{}", err);
     }
     assert_eq!(
-        stakes.get(&from.address_str()).unwrap().stake(),
+        accounts.get(&from.address_str()).unwrap().stake(),
         BigInt::from_str("9").unwrap()
     );
 }
 
 #[test]
 fn not_enough_for_fee_unstake() {
-    let mut balances = HashMap::new();
-    let mut stakes = BTreeMap::new();
+    let mut accounts = BTreeMap::new();
     let from = Wallet::new();
-    balances.insert(
-        from.address_str(),
-        Balance {
-            wallet: from.address_str(),
-            nonce: 0,
-            amount: BigDecimal::from_str("0").unwrap(),
-        },
-    );
-    stakes.insert(
-        from.address_str(),
-        Stake {
-            wallet: from.address_str(),
-            stake: BigInt::from_str("10").unwrap(),
-        },
-    );
+    let mut account = Account::new(from.address_str());
+    account.debit(BigDecimal::from_str("10").unwrap()).unwrap();
+
+    accounts.insert(from.address_str(), account);
     let tx_data = TxData::new(
         &from,
         String::from("UNSTAKE"),
@@ -135,12 +103,7 @@ fn not_enough_for_fee_unstake() {
     )
     .unwrap();
     let tx = Tx::from_tx(tx_data, String::default(), 1);
-    if let Some(err) = process_tx(
-        DEFAULT_VALIDATOR.to_string(),
-        &tx,
-        &mut balances,
-        &mut stakes,
-    ) {
+    if let Err(err) = process_tx(DEFAULT_VALIDATOR.to_string(), &tx, &mut accounts) {
         println!("{}", err);
         assert!(true);
     } else {
@@ -150,18 +113,14 @@ fn not_enough_for_fee_unstake() {
 
 #[test]
 fn not_enough_for_fee_stake() {
-    let mut balances = HashMap::new();
-    let mut stakes = BTreeMap::new();
+    let mut balances = BTreeMap::new();
 
     let from = Wallet::new();
-    balances.insert(
-        from.address_str(),
-        Balance {
-            wallet: from.address_str(),
-            nonce: 0,
-            amount: BigDecimal::from_str("0").unwrap(),
-        },
-    );
+
+    let mut account = Account::new(from.address_str());
+    account.debit(BigDecimal::from_str("1").unwrap()).unwrap();
+
+    balances.insert(from.address_str(), account);
     let tx_data = TxData::new(
         &from,
         String::from("STAKE"),
@@ -171,12 +130,7 @@ fn not_enough_for_fee_stake() {
     )
     .unwrap();
     let tx = Tx::from_tx(tx_data, String::default(), 1);
-    if let Some(err) = process_tx(
-        DEFAULT_VALIDATOR.to_string(),
-        &tx,
-        &mut balances,
-        &mut stakes,
-    ) {
+    if let Err(err) = process_tx(DEFAULT_VALIDATOR.to_string(), &tx, &mut balances) {
         println!("{}", err);
         assert!(true);
     } else {
@@ -186,17 +140,12 @@ fn not_enough_for_fee_stake() {
 
 #[test]
 fn valid_tx() {
-    let mut balances = HashMap::new();
-    let mut stakes = BTreeMap::new();
+    let mut balances = BTreeMap::new();
     let from = Wallet::new();
-    balances.insert(
-        from.address_str(),
-        Balance {
-            wallet: from.address_str(),
-            amount: BigDecimal::from_str("1").unwrap(),
-            nonce: 0,
-        },
-    );
+    let mut account = Account::new(from.address_str());
+    account.debit(BigDecimal::from_str("1").unwrap()).unwrap();
+
+    balances.insert(from.address_str(), account);
     let to = Wallet::new();
     let tx_data = TxData::new(
         &from,
@@ -207,29 +156,20 @@ fn valid_tx() {
     )
     .unwrap();
     let tx = Tx::from_tx(tx_data, String::default(), 1);
-    if let Some(err) = process_tx(
-        DEFAULT_VALIDATOR.to_string(),
-        &tx,
-        &mut balances,
-        &mut stakes,
-    ) {
+    if let Err(err) = process_tx(DEFAULT_VALIDATOR.to_string(), &tx, &mut balances) {
         assert!(false, "{}", err);
     }
 }
 
 #[test]
 fn valid_stake() {
-    let mut balances = HashMap::new();
-    let mut stakes = BTreeMap::new();
+    let mut accounts = BTreeMap::new();
+
     let from = Wallet::new();
-    balances.insert(
-        from.address_str(),
-        Balance {
-            wallet: from.address_str(),
-            amount: BigDecimal::from_str("10").unwrap(),
-            nonce: 0,
-        },
-    );
+    let mut account = Account::new(from.address_str());
+    account.debit(BigDecimal::from_str("10").unwrap()).unwrap();
+
+    accounts.insert(from.address_str(), account);
     let tx_data = TxData::new(
         &from,
         String::from("STAKE"),
@@ -239,34 +179,24 @@ fn valid_stake() {
     )
     .unwrap();
     let tx = Tx::from_tx(tx_data, String::default(), 1);
-    if let Some(err) = process_tx(
-        DEFAULT_VALIDATOR.to_string(),
-        &tx,
-        &mut balances,
-        &mut stakes,
-    ) {
+    if let Err(err) = process_tx(DEFAULT_VALIDATOR.to_string(), &tx, &mut accounts) {
         assert!(false, "{}", err);
     }
     assert_eq!(
-        stakes.get(&from.address_str()).unwrap().stake(),
+        accounts.get(&from.address_str()).unwrap().stake(),
         BigInt::from_str("1").unwrap()
     );
 }
 
 #[test]
 fn wrong_nonce_value() {
-    let mut balances = HashMap::new();
-    let mut stakes = BTreeMap::new();
+    let mut accounts = BTreeMap::new();
 
     let from = Wallet::new();
-    balances.insert(
-        from.address_str(),
-        Balance {
-            wallet: from.address_str(),
-            amount: BigDecimal::from_str("1").unwrap(),
-            nonce: 0,
-        },
-    );
+    let mut account = Account::new(from.address_str());
+    account.debit(BigDecimal::from_str("1").unwrap()).unwrap();
+
+    accounts.insert(from.address_str(), account);
 
     let to = Wallet::new();
     let tx_data = TxData::new(
@@ -278,34 +208,27 @@ fn wrong_nonce_value() {
     )
     .unwrap();
     let tx = Tx::from_tx(tx_data, String::default(), 1);
-    let err = process_tx(
-        DEFAULT_VALIDATOR.to_string(),
-        &tx,
-        &mut balances,
-        &mut stakes,
-    )
-    .expect("Nonce validation failure");
+    let Err(err) = process_tx(DEFAULT_VALIDATOR.to_string(), &tx, &mut accounts) else {
+        assert!(false, "Expect nonce validation");
+        exit(-1);
+    };
     assert_eq!(err, "Invalid nonce, expected: 1, was: 0");
 }
 
 #[test]
 fn tx_fee() {
-    let mut balances = HashMap::new();
-    let mut stakes = BTreeMap::new();
+    let mut accounts = BTreeMap::new();
 
     let start_balance = String::from("0.1");
     let start_fee = String::from("0.001");
 
     let from = Wallet::new();
+    let mut account = Account::new(from.address_str());
+    account.debit(BigDecimal::from_str("100").unwrap()).unwrap();
+    account.set_nonce(1).unwrap();
+
     let to = Wallet::new();
-    balances.insert(
-        from.address_str(),
-        Balance {
-            wallet: from.address_str(),
-            nonce: 1,
-            amount: BigDecimal::from_str("100").unwrap(),
-        },
-    );
+    accounts.insert(from.address_str(), account);
     let tx_data = TxData::new(
         &from,
         to.address_str(),
@@ -316,13 +239,13 @@ fn tx_fee() {
     .unwrap();
     let validator = Wallet::new();
     let tx = Tx::from_tx(tx_data, String::default(), 1);
-    process_tx(validator.address_str(), &tx, &mut balances, &mut stakes);
+    process_tx(validator.address_str(), &tx, &mut accounts).unwrap();
 
-    let validator_balance = balances.get(&validator.address_str()).unwrap();
-    let from_balance = balances.get(&from.address_str()).unwrap();
-    let to_balance = balances.get(&to.address_str()).unwrap();
+    let validator_balance = accounts.get(&validator.address_str()).unwrap();
+    let from_balance = accounts.get(&from.address_str()).unwrap();
+    let to_balance = accounts.get(&to.address_str()).unwrap();
 
-    assert_eq!(validator_balance.amount.to_plain_string(), start_fee);
-    assert_eq!(from_balance.amount.to_plain_string(), "99.899");
-    assert_eq!(to_balance.amount.to_plain_string(), "0.1");
+    assert_eq!(validator_balance.balance.to_plain_string(), start_fee);
+    assert_eq!(from_balance.balance.to_plain_string(), "99.899");
+    assert_eq!(to_balance.balance.to_plain_string(), "0.1");
 }

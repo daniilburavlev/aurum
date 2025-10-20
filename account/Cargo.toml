@@ -1,14 +1,17 @@
 [package]
-name = "balance"
+name = "account"
 version.workspace = true
 edition.workspace = true
+license.workspace = true
+authors.workspace = true
 
 [dependencies]
-rocksdb = { workspace = true }
+common = { path = "../common" }
 serde = { workspace = true }
 serde_json = { workspace = true }
-common = { path = "../common" }
+rocksdb = { workspace = true }
 
 [dev-dependencies]
+wallet = { path = "../wallet" }
 tempfile = { workspace = true }
 db = { path = "../db" }

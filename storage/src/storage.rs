@@ -1,13 +1,11 @@
-use balance::balance::Balance;
-use balance::balance_storage::BalanceStorage;
+use account::account::Account;
+use account::account_storage::AccountStorage;
 use block::block::Block;
 use block::block_storage::BlockStorage;
 use common::biginteger::BigInt;
 use log::{debug, error};
 use operation::tx::process_tx;
-use stake::stake::Stake;
-use stake::stake_storage::StakeStorage;
-use std::collections::{BTreeMap, HashMap, HashSet};
+use std::collections::{BTreeMap, HashSet};
 use std::error::Error;
 use std::fs;
 use std::hash::{DefaultHasher, Hash, Hasher};
@@ -18,14 +16,11 @@ use tx::tx_data::TxData;
 use tx::tx_storage::TxStorage;
 
 const FIRST_EVENT_HASH: [u8; 32] = [0u8; 32];
-const GENESIS_WALLET: &str = "GENESIS";
-const STAKE_WALLET: &str = "STAKE";
 
 pub struct Storage {
     tx_storage: TxStorage,
-    balance_storage: BalanceStorage,
+    account_storage: AccountStorage,
     block_storage: BlockStorage,
-    stake_storage: StakeStorage,
 }
 
 impl Storage {
@@ -34,8 +29,7 @@ impl Storage {
             Ok(db) => Self {
                 tx_storage: TxStorage::new(&db),
                 block_storage: BlockStorage::new(&db),
-                balance_storage: BalanceStorage::new(&db),
-                stake_storage: StakeStorage::new(&db),
+                account_storage: AccountStorage::new(&db),
             },
             Err(e) => {
                 eprintln!("Cannot initialize local storage: {}", e);
@@ -55,26 +49,13 @@ impl Storage {
 
     pub fn load_genesis(&self, txs_data: Vec<TxData>) -> Result<(), Box<dyn Error>> {
         let txs = Self::build_genesis_txs(txs_data)?;
-        let mut balances: HashMap<String, Balance> = HashMap::new();
-        let mut stakes: BTreeMap<String, Stake> = BTreeMap::new();
+        let mut accounts: BTreeMap<String, Account> = BTreeMap::new();
+
         for tx in &txs {
-            if tx.from() == GENESIS_WALLET {
-                let balance = balances.entry(tx.to()).or_insert(Default::default());
-                balance.wallet = tx.to();
-                balance.amount += tx.amount();
-            } else if tx.to() == STAKE_WALLET {
-                let balance = balances.entry(tx.from()).or_insert(Default::default());
-                balance.wallet = tx.from();
-                balance.amount -= tx.amount();
-                let stake = stakes.entry(tx.from()).or_insert(Stake::empty(tx.from()));
-                stake.stake += tx.amount().to_bigint().unwrap();
-                balance.nonce = tx.nonce();
-            }
+            process_tx("GENESIS".to_string(), tx, &mut accounts)?;
         }
-        let balances: Vec<Balance> = balances.into_values().collect();
-        let stakes: Vec<Stake> = stakes.into_values().collect();
-        self.balance_storage.save_all(&balances)?;
-        self.stake_storage.save_all(&stakes)?;
+        let accounts: Vec<Account> = accounts.into_values().collect();
+        self.account_storage.save_all(&accounts)?;
         self.tx_storage.save(&txs, 0)?;
         let genesis = Block::genesis(txs);
         self.block_storage.save(&genesis)?;
@@ -128,16 +109,8 @@ impl Storage {
         Ok(())
     }
 
-    pub fn balances(&self) -> HashMap<String, Balance> {
-        if let Ok(stakes) = self.balance_storage.load_all() {
-            stakes
-        } else {
-            HashMap::new()
-        }
-    }
-
-    pub fn stakes(&self) -> BTreeMap<String, Stake> {
-        if let Ok(stakes) = self.stake_storage.load_all() {
+    pub fn accounts(&self) -> BTreeMap<String, Account> {
+        if let Ok(stakes) = self.account_storage.load_all() {
             stakes
         } else {
             BTreeMap::new()
@@ -171,18 +144,15 @@ impl Storage {
             wallets.insert(tx.from());
             wallets.insert(tx.to());
         }
-        let mut balances = self.balance_storage.find_all(&wallets)?;
-        let mut stakes = self.stake_storage.find_all(&wallets)?;
+        let mut accounts = self.account_storage.find_all(&wallets)?;
         for tx in txs {
-            if let Some(err) = process_tx(validator.clone(), &tx, &mut balances, &mut stakes) {
+            if let Err(err) = process_tx(validator.clone(), &tx, &mut accounts) {
                 debug!("Invalid tx: {}", err);
                 return Ok(false);
             }
         }
-        let balances: Vec<Balance> = balances.into_values().collect();
-        let stakes: Vec<Stake> = stakes.into_values().collect();
-        self.balance_storage.save_all(&balances)?;
-        self.stake_storage.save_all(&stakes)?;
+        let accounts: Vec<Account> = accounts.into_values().collect();
+        self.account_storage.save_all(&accounts)?;
         self.tx_storage.save(txs, block_idx)?;
         Ok(true)
     }
@@ -211,7 +181,7 @@ impl Storage {
         if let Some(block) = self.block_storage.find_latest()? {
             let hash = block.hash();
             let hash = Self::hash_to_int(hash);
-            let stakes = self.stake_storage.load_all()?;
+            let stakes = self.account_storage.load_all()?;
             let index = BigInt::from_u64(hash).unwrap() % Self::total_stake(&stakes);
             let mut latest = BigInt::zero();
             for (_, stake) in stakes {
@@ -232,10 +202,10 @@ impl Storage {
         }
     }
 
-    fn total_stake(stakes: &BTreeMap<String, Stake>) -> BigInt {
+    fn total_stake(stakes: &BTreeMap<String, Account>) -> BigInt {
         let mut total = BigInt::from_str("0").unwrap();
         for (_, stake) in stakes {
-            total += stake.stake.clone()
+            total += stake.stake()
         }
         total
     }

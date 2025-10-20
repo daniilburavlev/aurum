@@ -134,36 +134,38 @@ xchg find-block --node <URL> --idx 0
 Response
 ```json
 {
-    "idx": 0,
-    "validator": "111111111111111111111111111111111",
-    "parent_hash": "11111111111111111111111111111111",
-    "merkle_root": "9bKXYeNZwaC9panjzqyjuZ1AuNotEwEFdo9oQda2zS8M",
-    "txs": [
-        {
-            "data": {
-                "from": "GENESIS",
-                "to": "z8TWw9FD1MStBqrvEs5R6E4Gbpenf5tPDKFSK9TdFFax",
-                "amount": "2653090",
-                "nonce": 1,
-                "signature": "GENESIS_8bb67f35694c47a6ae6038f8c0511c42"
-            },
-            "prev_hash": "11111111111111111111111111111111",
-            "block": 0,
-            "hash": "3Lec2a9fGBQRBCsjjpH5247JgydpnYBW3ueNhF7Udj76"
-        },
-        {
-            "data": {
-                "from": "z8TWw9FD1MStBqrvEs5R6E4Gbpenf5tPDKFSK9TdFFax",
-                "to": "STAKE",
-                "amount": "100",
-                "nonce": 1,
-                "signature": "GENESIS_aade396bfc964afdbeee22e5fbdf2c72"
-            },
-            "prev_hash": "3Lec2a9fGBQRBCsjjpH5247JgydpnYBW3ueNhF7Udj76",
-            "block": 0,
-            "hash": "4WBaffY4fuqpRr86oxW7GpRDE52ozw2bdPF8P8DpDemU"
-        }
-    ],
-    "signature": "GENESIS"
+  "idx": 0,
+  "validator": "111111111111111111111111111111111",
+  "parent_hash": "11111111111111111111111111111111",
+  "merkle_root": "7FnvTG9MFvNDyc79e5tZey8KKj7EkAiT5St4fuaL9jyE",
+  "txs": [
+    {
+      "data": {
+        "from": "GENESIS",
+        "to": "pKgv2HAS9sZJprnNhDahsyoSFvnBQ3E2MStgNyweafLi",
+        "amount": "1123344566",
+        "fee": "0",
+        "nonce": 1,
+        "signature": "GENESIS_d5ace3e7a6374c8b81ee09a79576df07"
+      },
+      "prev_hash": "11111111111111111111111111111111",
+      "block": 0,
+      "hash": "76ZCaMfEHjFZLHG9yzrwgz1dQpFx44FX9HBZ7FCk3JR5"
+    },
+    {
+      "data": {
+        "from": "pKgv2HAS9sZJprnNhDahsyoSFvnBQ3E2MStgNyweafLi",
+        "to": "STAKE",
+        "amount": "23344566",
+        "fee": "0",
+        "nonce": 1,
+        "signature": "GENESIS_d5ace3e7a6374c8b81ee09a79576df07"
+      },
+      "prev_hash": "76ZCaMfEHjFZLHG9yzrwgz1dQpFx44FX9HBZ7FCk3JR5",
+      "block": 0,
+      "hash": "7RbziUv8j32iEyzDx8hggW2kFacKsphTr9vMTYJ8bkDT"
+    }
+  ],
+  "signature": "GENESIS"
 }
 ```

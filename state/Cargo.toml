@@ -5,9 +5,8 @@ edition.workspace = true
 
 [dependencies]
 block = { path = "../block" }
-stake = { path = "../stake" }
+account = { path = "../account" }
 operation = { path = "../operation" }
-balance = { path = "../balance" }
 tx = { path = "../tx" }
 wallet = { path = "../wallet" }
 common = { path = "../common" }

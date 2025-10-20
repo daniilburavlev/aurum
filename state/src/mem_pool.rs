@@ -1,10 +1,9 @@
-use balance::balance::Balance;
+use account::account::Account;
 use block::block::Block;
 use common::bigdecimal::BigDecimal;
 use log::debug;
 use operation::tx::process_tx;
-use stake::stake::Stake;
-use std::collections::{BTreeMap, HashMap};
+use std::collections::BTreeMap;
 use tx::tx::Tx;
 use tx::tx_data::TxData;
 use wallet::wallet::Wallet;
@@ -17,8 +16,7 @@ pub struct MemPool {
     current_block: u64,
     prev_block_hash: String,
     last_event: String,
-    balances: HashMap<String, Balance>,
-    stakes: BTreeMap<String, Stake>,
+    accounts: BTreeMap<String, Account>,
     pending_txs: Vec<Tx>,
 }
 
@@ -29,8 +27,7 @@ impl MemPool {
             current_block: 0,
             prev_block_hash: String::default(),
             last_event: String::default(),
-            balances: HashMap::new(),
-            stakes: BTreeMap::new(),
+            accounts: BTreeMap::new(),
             pending_txs: Vec::new(),
         }
     }
@@ -40,14 +37,12 @@ impl MemPool {
         prev_block_hash: String,
         current_block: u64,
         last_event: String,
-        balances: HashMap<String, Balance>,
-        stakes: BTreeMap<String, Stake>,
+        accounts: BTreeMap<String, Account>,
     ) {
         self.prev_block_hash = prev_block_hash;
         self.current_block = current_block;
         self.last_event = last_event;
-        self.balances = balances;
-        self.stakes = stakes;
+        self.accounts = accounts;
     }
 
     pub fn add_tx(&mut self, tx_data: TxData) -> Result<Tx, String> {
@@ -58,12 +53,7 @@ impl MemPool {
             return Err(String::from("Fee is to low"));
         }
         let tx = Tx::from_tx(tx_data, self.last_event.clone(), self.current_block);
-        if let Some(err) = process_tx(
-            self.wallet.address_str(),
-            &tx,
-            &mut self.balances,
-            &mut self.stakes,
-        ) {
+        if let Err(err) = process_tx(self.wallet.address_str(), &tx, &mut self.accounts) {
             Err(err)
         } else {
             self.pending_txs.push(tx.clone());
@@ -72,11 +62,11 @@ impl MemPool {
         }
     }
 
-    pub fn get_nonce(&mut self, wallet: String) -> u64 {
-        if let Some(balance) = self.balances.get(&wallet) {
-            balance.nonce
+    pub fn get_account(&mut self, wallet: String) -> Option<Account> {
+        if let Some(account) = self.accounts.get(&wallet) {
+            Some(account.clone())
         } else {
-            0
+            None
         }
     }
 

@@ -66,6 +66,7 @@ impl TxData {
         hasher.update(self.from.as_bytes());
         hasher.update(self.to.as_bytes());
         hasher.update(self.amount.to_string().as_bytes());
+        hasher.update(self.fee.to_string().as_bytes());
         hasher.update(self.nonce.to_be_bytes());
         hasher.finalize().into()
     }

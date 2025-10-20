@@ -1,39 +1,36 @@
-use balance::balance::Balance;
+use account::account::Account;
 use common::bigdecimal::BigDecimal;
 use state::state::State;
-use std::collections::{BTreeMap, HashMap};
+use std::collections::BTreeMap;
 use tx::tx_data::TxData;
 use wallet::wallet::Wallet;
 
 #[tokio::test]
 async fn add_tx() {
-    let hash = String::default();
     let current_block = 0;
     let last_event = String::default();
 
-    let mut balances = HashMap::new();
-    let stakes = BTreeMap::new();
+    let mut accounts = BTreeMap::new();
 
     let wallet = Wallet::new();
 
     let nonce = 0;
     let amount = BigDecimal::from_str("1000").unwrap();
 
-    balances.insert(
-        hash.clone(),
-        Balance {
-            wallet: wallet.address_str(),
-            nonce,
-            amount: amount.clone(),
-        },
-    );
+    let mut account = Account::new(wallet.address_str());
+    account.debit(amount).unwrap();
+
+    accounts.insert(account.wallet(), account.clone());
 
     let state = State::new(wallet.clone());
     state
-        .update(hash, current_block, last_event, balances, stakes)
+        .update(account.wallet(), current_block, last_event, accounts)
         .await;
 
-    assert_eq!(nonce, state.get_nonce(wallet.address_str()).await);
+    let Some(account) = state.get_account(wallet.address_str()).await else {
+        panic!("account not found");
+    };
+    assert_eq!(nonce, account.nonce);
     let tx = TxData::new(
         &wallet,
         String::from("to"),

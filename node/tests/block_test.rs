@@ -3,7 +3,7 @@ use std::fs::OpenOptions;
 use std::io::Write;
 use std::path::Path;
 use storage::storage::Storage;
-use tempfile::{NamedTempFile, tempdir};
+use tempfile::{tempdir, NamedTempFile};
 use tx::tx_data::TxData;
 use wallet::wallet::Wallet;
 
@@ -27,8 +27,7 @@ async fn add_valid_block() {
             block.hash_str(),
             1,
             latest_event_hash,
-            storage.balances(),
-            storage.stakes(),
+            storage.accounts(),
         )
         .await;
 

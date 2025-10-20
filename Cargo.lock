@@ -3,6 +3,19 @@
 version = 4
 
 [[package]]
+name = "account"
+version = "0.1.1"
+dependencies = [
+ "common",
+ "db",
+ "rocksdb",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "wallet",
+]
+
+[[package]]
 name = "addr2line"
 version = "0.24.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -385,18 +398,6 @@ dependencies = [
  "object",
  "rustc-demangle",
  "windows-targets 0.52.6",
-]
-
-[[package]]
-name = "balance"
-version = "0.1.1"
-dependencies = [
- "common",
- "db",
- "rocksdb",
- "serde",
- "serde_json",
- "tempfile",
 ]
 
 [[package]]
@@ -2827,9 +2828,8 @@ checksum = "d05e27ee213611ffe7d6348b942e8f942b37114c00cc03cec254295a4a17852e"
 name = "operation"
 version = "0.1.1"
 dependencies = [
- "balance",
+ "account",
  "common",
- "stake",
  "tx",
  "wallet",
 ]
@@ -2838,6 +2838,7 @@ dependencies = [
 name = "p2p"
 version = "0.1.1"
 dependencies = [
+ "account",
  "block",
  "common",
  "futures",
@@ -3330,6 +3331,7 @@ dependencies = [
 name = "rpc"
 version = "0.1.1"
 dependencies = [
+ "account",
  "axum",
  "block",
  "bs58",
@@ -3745,28 +3747,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6ce2be8dc25455e1f91df71bfa12ad37d7af1092ae736f3a6cd0e37bc7810596"
 
 [[package]]
-name = "stake"
-version = "0.1.1"
-dependencies = [
- "common",
- "db",
- "rocksdb",
- "serde",
- "serde_json",
- "tempfile",
-]
-
-[[package]]
 name = "state"
 version = "0.1.1"
 dependencies = [
- "balance",
+ "account",
  "block",
  "common",
  "futures",
  "log",
  "operation",
- "stake",
  "tokio",
  "tx",
  "wallet",
@@ -3782,7 +3771,7 @@ checksum = "a2eb9349b6444b326872e140eb1cf5e7c522154d69e7a0ffb0fb81c06b37543f"
 name = "storage"
 version = "0.1.1"
 dependencies = [
- "balance",
+ "account",
  "block",
  "bs58",
  "common",
@@ -3790,7 +3779,6 @@ dependencies = [
  "log",
  "operation",
  "serde_json",
- "stake",
  "tempfile",
  "tx",
  "wallet",

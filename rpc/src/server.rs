@@ -1,4 +1,5 @@
-use crate::schema::{ErrorResponse, WalletInfo};
+use crate::schema::ErrorResponse;
+use account::account::Account;
 use axum::extract::{Path, State};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
@@ -24,9 +25,9 @@ impl P2pClientHolder {
         }
     }
 
-    async fn get_nonce(&self, wallet: String, peer_id: PeerId) -> u64 {
+    async fn get_account(&self, wallet: String, peer_id: PeerId) -> Option<Account> {
         let mut client = self.client.lock().await;
-        client.get_nonce(wallet, peer_id).await
+        client.get_account(wallet, peer_id).await
     }
 
     async fn add_tx(&self, data: TxData, peer_id: PeerId) -> Result<Tx, String> {
@@ -87,15 +88,15 @@ impl AppState {
         self.storage.find_block_by_idx(idx).unwrap_or(None)
     }
 
-    async fn get_nonce(&self, wallet: String) -> u64 {
+    async fn get_account(&self, wallet: String) -> Option<Account> {
         let current_validator = self.get_current_validator();
         if current_validator == self.wallet {
-            self.state.get_nonce(wallet).await
+            self.state.get_account(wallet).await
         } else {
             if let Some(peer_id) = self.address_to_peer_id(current_validator) {
-                self.client.get_nonce(wallet, peer_id).await
+                self.client.get_account(wallet, peer_id).await
             } else {
-                0
+                None
             }
         }
     }
@@ -165,7 +166,7 @@ pub async fn run(
 
     let app = Router::new()
         .route("/api/blocks/{idx}", get(find_block_by_idx))
-        .route("/api/wallets/{wallet}", get(get_nonce))
+        .route("/api/wallets/{wallet}", get(get_wallet))
         .route("/api/wallets/{wallet}/txs", get(get_wallet_txs))
         .route("/api/txs", post(add_tx))
         .route("/api/fee", get(get_fee))
@@ -186,17 +187,19 @@ async fn find_block_by_idx(
     if let Some(block) = state.find_block(idx).await {
         Ok(Json::from(block))
     } else {
-        Err(AppError::NotFound(format!("Block #{}", idx)))
+        Err(AppError::NotFound(format!("Block #{} not found", idx)))
     }
 }
 
 #[axum::debug_handler]
-async fn get_nonce(
+async fn get_wallet(
     Path(wallet): Path<String>,
     state: State<Arc<AppState>>,
-) -> Result<Json<WalletInfo>, AppError> {
-    let nonce = state.get_nonce(wallet).await;
-    Ok(Json(WalletInfo { nonce }))
+) -> Result<Json<Account>, AppError> {
+    match state.get_account(wallet.clone()).await {
+        Some(account) => Ok(Json(account)),
+        None => Err(AppError::NotFound(format!("Account #{} not found", wallet))),
+    }
 }
 
 #[axum::debug_handler]
@@ -219,9 +222,7 @@ async fn add_tx(
 }
 
 #[axum::debug_handler]
-async fn get_fee(
-    state: State<Arc<AppState>>,
-) -> Result<Json<FeeResponse>, AppError> {
+async fn get_fee(state: State<Arc<AppState>>) -> Result<Json<FeeResponse>, AppError> {
     match state.get_fee().await {
         Ok(fee) => Ok(Json(fee)),
         Err(err) => Err(AppError::BadRequest(err)),

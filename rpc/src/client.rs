@@ -1,4 +1,5 @@
-use crate::schema::{ErrorResponse, WalletInfo};
+use crate::schema::ErrorResponse;
+use account::account::Account;
 use block::block::Block;
 use common::bigdecimal::BigDecimal;
 use httpclient::{Client, InMemoryBody, ResponseExt};
@@ -29,7 +30,7 @@ impl RpcClient {
         }
     }
 
-    pub async fn get_nonce(&self, wallet: String) -> u64 {
+    pub async fn get_account(&self, wallet: String) -> Option<Account> {
         if let Ok(response) = self
             .client
             .get(format!("/api/wallets/{}", wallet))
@@ -38,13 +39,13 @@ impl RpcClient {
         {
             if response.status().as_u16() == 200 {
                 let body = response.text().await;
-                let body: WalletInfo = serde_json::from_str(&body.unwrap()).unwrap();
-                body.nonce
+                let body: Account = serde_json::from_str(&body.unwrap()).unwrap();
+                Some(body)
             } else {
-                0
+                None
             }
         } else {
-            0
+            None
         }
     }
 

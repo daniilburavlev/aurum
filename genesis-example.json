@@ -1,0 +1,35 @@
+{
+  "idx": 0,
+  "validator": "111111111111111111111111111111111",
+  "parent_hash": "11111111111111111111111111111111",
+  "merkle_root": "7FnvTG9MFvNDyc79e5tZey8KKj7EkAiT5St4fuaL9jyE",
+  "txs": [
+    {
+      "data": {
+        "from": "GENESIS",
+        "to": "pKgv2HAS9sZJprnNhDahsyoSFvnBQ3E2MStgNyweafLi",
+        "amount": "1123344566",
+        "fee": "0",
+        "nonce": 1,
+        "signature": "GENESIS_d5ace3e7a6374c8b81ee09a79576df07"
+      },
+      "prev_hash": "11111111111111111111111111111111",
+      "block": 0,
+      "hash": "76ZCaMfEHjFZLHG9yzrwgz1dQpFx44FX9HBZ7FCk3JR5"
+    },
+    {
+      "data": {
+        "from": "pKgv2HAS9sZJprnNhDahsyoSFvnBQ3E2MStgNyweafLi",
+        "to": "STAKE",
+        "amount": "23344566",
+        "fee": "0",
+        "nonce": 1,
+        "signature": "GENESIS_d5ace3e7a6374c8b81ee09a79576df07"
+      },
+      "prev_hash": "76ZCaMfEHjFZLHG9yzrwgz1dQpFx44FX9HBZ7FCk3JR5",
+      "block": 0,
+      "hash": "7RbziUv8j32iEyzDx8hggW2kFacKsphTr9vMTYJ8bkDT"
+    }
+  ],
+  "signature": "GENESIS"
+}

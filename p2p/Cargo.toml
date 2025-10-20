@@ -9,6 +9,7 @@ tokio = { workspace = true }
 futures = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
+account = { path = "../account" }
 block = { path = "../block" }
 wallet = { path = "../wallet" }
 storage = { path = "../storage" }

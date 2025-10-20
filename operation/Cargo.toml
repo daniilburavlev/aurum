@@ -5,8 +5,7 @@ edition.workspace = true
 
 [dependencies]
 tx = { path = "../tx" }
-balance = { path = "../balance" }
-stake = { path = "../stake" }
+account = { path = "../account" }
 common = { path = "../common" }
 
 [dev-dependencies]

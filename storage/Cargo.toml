@@ -4,9 +4,8 @@ version.workspace = true
 edition.workspace = true
 
 [dependencies]
-balance = { path = "../balance" }
+account = { path = "../account" }
 operation = { path = "../operation" }
-stake = { path = "../stake" }
 bs58 = { workspace = true }
 block = { path = "../block" }
 db = { path = "../db" }

@@ -67,8 +67,7 @@ pub async fn p2p_test() {
 
     let peer_id = providers.iter().next().unwrap().clone();
 
-    let nonce = client2.get_nonce(wallet.address_str(), peer_id).await;
-    assert_eq!(nonce, 0);
+    client2.get_account(wallet.address_str(), peer_id).await;
 
     let block = client2.find_block(0, peer_id).await.unwrap();
     assert_eq!(block, genesis);

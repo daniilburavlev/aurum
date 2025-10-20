@@ -6,7 +6,7 @@ authors = ["Daniil Buravlev burravlev.d.a@gmail.com"]
 
 [workspace]
 resolver = "2"
-members = ["balance", "block", "common", "crypto", "db", "node", "operation", "p2p", "rpc", "stake", "state", "storage", "tx", "wallet"]
+members = ["account", "block", "common", "crypto", "db", "node", "operation", "p2p", "rpc", "state", "storage", "tx", "wallet"]
 
 [workspace.dependencies]
 argon2 = "0.5.3"

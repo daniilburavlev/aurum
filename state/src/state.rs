@@ -1,9 +1,8 @@
 use crate::mem_pool::MemPool;
-use balance::balance::Balance;
+use account::account::Account;
 use block::block::Block;
-use stake::stake::Stake;
-use std::collections::{BTreeMap, HashMap};
 use common::bigdecimal::BigDecimal;
+use std::collections::BTreeMap;
 use tx::tx::Tx;
 use tx::tx_data::TxData;
 use wallet::wallet::Wallet;
@@ -24,11 +23,10 @@ impl State {
         prev_block_hash: String,
         current_block: u64,
         last_event: String,
-        balances: HashMap<String, Balance>,
-        stakes: BTreeMap<String, Stake>,
+        accounts: BTreeMap<String, Account>,
     ) {
         let mut mem_pool = self.mem_pool.lock().await;
-        mem_pool.update(prev_block_hash, current_block, last_event, balances, stakes);
+        mem_pool.update(prev_block_hash, current_block, last_event, accounts);
     }
 
     pub async fn add_tx(&self, tx_data: TxData) -> Result<Tx, String> {
@@ -36,9 +34,9 @@ impl State {
         mem_pool.add_tx(tx_data)
     }
 
-    pub async fn get_nonce(&self, wallet: String) -> u64 {
+    pub async fn get_account(&self, wallet: String) -> Option<Account> {
         let mut mem_pool = self.mem_pool.lock().await;
-        mem_pool.get_nonce(wallet)
+        mem_pool.get_account(wallet)
     }
 
     pub async fn new_block(&self, validator: String) -> Option<Block> {

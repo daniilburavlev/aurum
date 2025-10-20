@@ -1,23 +1,24 @@
+use account::account::Account;
 use block::block::Block;
 use common::bigdecimal::BigDecimal;
 use futures::{
+    StreamExt,
     channel::{mpsc, oneshot},
     prelude::*,
-    StreamExt,
 };
 use libp2p::gossipsub::IdentTopic;
-use libp2p::kad::store::MemoryStore;
 use libp2p::kad::GetProvidersOk;
+use libp2p::kad::store::MemoryStore;
 use libp2p::multiaddr::Protocol;
 use libp2p::request_response::{OutboundRequestId, ProtocolSupport};
 use libp2p::swarm::{NetworkBehaviour, SwarmEvent};
 use libp2p::{
-    gossipsub, kad, noise, request_response, tcp, yamux, Multiaddr, PeerId, StreamProtocol, Swarm,
+    Multiaddr, PeerId, StreamProtocol, Swarm, gossipsub, kad, noise, request_response, tcp, yamux,
 };
 use log::{debug, error};
 use serde::{Deserialize, Serialize};
 use state::state::State;
-use std::collections::{hash_map, HashMap, HashSet};
+use std::collections::{HashMap, HashSet, hash_map};
 use std::error::Error;
 use std::sync::Arc;
 use std::time::Duration;
@@ -30,7 +31,7 @@ use tx::tx_data::TxData;
 pub struct P2pBehaviour {
     kademlia: kad::Behaviour<MemoryStore>,
     gossipsub: gossipsub::Behaviour,
-    get_nonce: request_response::json::Behaviour<NonceRequest, NonceResponse>,
+    get_nonce: request_response::json::Behaviour<NonceRequest, AccountResponse>,
     find_block: request_response::json::Behaviour<BlockRequest, BlockResponse>,
     add_tx: request_response::json::Behaviour<TxData, TxResponse>,
     get_fee: request_response::json::Behaviour<FeeRequest, FeeResponse>,
@@ -56,10 +57,10 @@ enum Command {
         wallet: String,
         sender: oneshot::Sender<HashSet<PeerId>>,
     },
-    GetNonce {
+    GetAccount {
         wallet: String,
         peer: PeerId,
-        sender: oneshot::Sender<u64>,
+        sender: oneshot::Sender<Option<Account>>,
     },
     FindBlock {
         idx: u64,
@@ -158,7 +159,7 @@ pub struct EventLoop {
     pending_start_providing: HashMap<kad::QueryId, oneshot::Sender<()>>,
     pending_get_providers: HashMap<kad::QueryId, oneshot::Sender<HashSet<PeerId>>>,
     command_receiver: mpsc::Receiver<Command>,
-    pending_get_nonce: HashMap<OutboundRequestId, oneshot::Sender<u64>>,
+    pending_get_account: HashMap<OutboundRequestId, oneshot::Sender<Option<Account>>>,
     pending_add_tx: HashMap<OutboundRequestId, oneshot::Sender<Result<Tx, String>>>,
     pending_get_fee: HashMap<OutboundRequestId, oneshot::Sender<FeeResponse>>,
     pending_find_block: HashMap<OutboundRequestId, oneshot::Sender<Option<Block>>>,
@@ -182,7 +183,7 @@ impl EventLoop {
             pending_start_providing: HashMap::new(),
             pending_get_providers: HashMap::new(),
             command_receiver,
-            pending_get_nonce: HashMap::new(),
+            pending_get_account: HashMap::new(),
             pending_add_tx: HashMap::new(),
             pending_find_block: HashMap::new(),
             pending_get_fee: HashMap::new(),
@@ -275,12 +276,12 @@ impl EventLoop {
                 request_response::Message::Request {
                     request, channel, ..
                 } => {
-                    let nonce = self.state.get_nonce(request.wallet).await;
+                    let account = self.state.get_account(request.wallet).await;
                     if let Err(e) = self
                         .swarm
                         .behaviour_mut()
                         .get_nonce
-                        .send_response(channel, NonceResponse { nonce })
+                        .send_response(channel, AccountResponse { account })
                     {
                         error!("Failed to send nonce: {:?}", e);
                     }
@@ -290,10 +291,10 @@ impl EventLoop {
                     response,
                 } => {
                     let _ = self
-                        .pending_get_nonce
+                        .pending_get_account
                         .remove(&request_id)
                         .expect("Request to still be pending.")
-                        .send(response.nonce);
+                        .send(response.account);
                 }
             },
             SwarmEvent::Behaviour(P2pBehaviourEvent::FindBlock(
@@ -490,7 +491,7 @@ impl EventLoop {
                     .get_providers(wallet.into_bytes().into());
                 self.pending_get_providers.insert(query_id, sender);
             }
-            Command::GetNonce {
+            Command::GetAccount {
                 wallet,
                 peer,
                 sender,
@@ -500,7 +501,7 @@ impl EventLoop {
                     .behaviour_mut()
                     .get_nonce
                     .send_request(&peer, NonceRequest { wallet });
-                self.pending_get_nonce.insert(request_id, sender);
+                self.pending_get_account.insert(request_id, sender);
             }
             Command::FindBlock { idx, peer, sender } => {
                 let request_id = self
@@ -586,10 +587,10 @@ impl Client {
         receiver.await.expect("Sender not to be dropped.")
     }
 
-    pub async fn get_nonce(&mut self, wallet: String, peer: PeerId) -> u64 {
+    pub async fn get_account(&mut self, wallet: String, peer: PeerId) -> Option<Account> {
         let (sender, receiver) = oneshot::channel();
         self.sender
-            .send(Command::GetNonce {
+            .send(Command::GetAccount {
                 wallet,
                 peer,
                 sender,
@@ -640,8 +641,8 @@ pub struct NonceRequest {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct NonceResponse {
-    pub nonce: u64,
+pub struct AccountResponse {
+    pub account: Option<Account>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
